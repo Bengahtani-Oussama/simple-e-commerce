@@ -1,0 +1,75 @@
+import express, { Application } from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import connectDatabase from './config/database';
+import { errorHandler, notFound } from './middleware/errorHandler';
+
+// Import routes
+import authRoutes from './routes/authRoutes';
+import adminAuthRoutes from './routes/adminAuthRoutes';
+import categoryRoutes from './routes/categoryRoutes';
+import brandRoutes from './routes/brandRoutes';
+import productRoutes from './routes/productRoutes';
+import uploadRoutes from './routes/uploadRoutes';
+import cartRoutes from './routes/cartRoutes';
+import orderRoutes from './routes/orderRoutes';
+import adminOrderRoutes from './routes/adminOrderRoutes';
+import userRoutes from './routes/userRoutes';
+
+// Load environment variables
+dotenv.config();
+
+// Create Express app
+const app: Application = express();
+
+// Connect to database
+connectDatabase();
+
+// Middleware
+app.use(
+  cors({
+    origin: [
+      process.env.CLIENT_URL || 'http://localhost:3000',
+      process.env.ADMIN_URL || 'http://localhost:3001',
+    ],
+    credentials: true,
+  })
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Routes
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Algeria E-Commerce API',
+    version: '1.0.0',
+  });
+});
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/brands', brandRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/users', userRoutes);
+
+// Error handling
+app.use(notFound);
+app.use(errorHandler);
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+export default app;
