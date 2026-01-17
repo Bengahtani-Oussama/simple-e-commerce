@@ -11,7 +11,7 @@ import { protect, isCustomer } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// All user routes require customer authentication
+// All user routes require user authentication
 router.use(protect, isCustomer);
 
 router.put('/profile', updateProfile);
