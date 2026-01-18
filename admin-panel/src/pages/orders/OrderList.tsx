@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Filter, Download, Eye, Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Search, Filter, Download, Eye, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -10,20 +10,27 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import api from '@/services/api';
-import { formatPrice, formatDateTime, getStatusColor, debounce, downloadCSV } from '@/utils';
-import type { Order } from '@/types';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import api from "@/services/api";
+import {
+  formatPrice,
+  formatDateTime,
+  getStatusColor,
+  debounce,
+  downloadCSV,
+} from "@/utils";
+import type { Order } from "@/types";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -39,12 +46,24 @@ const OrderList = () => {
     cancelledOrders: 0,
   });
 
+  // expanded
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const toggleExpand = (orderId: string) => {
+    setExpandedOrders((prev) => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
   // Filters
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") || "",
+  );
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 20;
@@ -63,19 +82,20 @@ const OrderList = () => {
 
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
-      if (paymentStatusFilter && paymentStatusFilter !== 'all') params.paymentStatus = paymentStatusFilter;
+      if (paymentStatusFilter && paymentStatusFilter !== "all")
+        params.paymentStatus = paymentStatusFilter;
       if (dateFrom) params.startDate = dateFrom;
       if (dateTo) params.endDate = dateTo;
 
-      const response = await api.get('/admin/orders', { params });
+      const response = await api.get("/admin/orders", { params });
       setOrders(response.data.data || []);
       setTotal(response.data.total || 0);
-      
+
       if (response.data.stats) {
         setStats(response.data.stats);
       }
     } catch (error) {
-      console.error('Failed to fetch orders:', error);
+      console.error("Failed to fetch orders:", error);
     } finally {
       setLoading(false);
     }
@@ -97,40 +117,43 @@ const OrderList = () => {
   };
 
   const clearFilters = () => {
-    setSearch('');
-    setStatusFilter('');
-    setPaymentStatusFilter('all');
-    setDateFrom('');
-    setDateTo('');
+    setSearch("");
+    setStatusFilter("");
+    setPaymentStatusFilter("all");
+    setDateFrom("");
+    setDateTo("");
     setPage(1);
     setSearchParams({});
   };
 
   const handleExportOrders = () => {
     const exportData = orders.map((order) => ({
-      'Order Number': order.orderNumber,
-      'Date': formatDateTime(order.createdAt),
-      'Customer': order.shippingAddress.fullName,
-      'Phone': order.shippingAddress.phone,
-      'Wilaya': order.shippingAddress.wilaya,
-      'Items': order.items.length,
-      'Total': order.total,
-      'Status': order.orderStatus,
-      'Payment Status': order.paymentStatus,
+      "Order Number": order.orderNumber,
+      Date: formatDateTime(order.createdAt),
+      Customer: order.shippingAddress.fullName,
+      Phone: order.shippingAddress.phone,
+      Wilaya: order.shippingAddress.wilaya,
+      Items: order.items.length,
+      Total: order.total,
+      Status: order.orderStatus,
+      "Payment Status": order.paymentStatus,
     }));
 
-    downloadCSV(exportData, `orders-${new Date().toISOString().split('T')[0]}.csv`);
+    downloadCSV(
+      exportData,
+      `orders-${new Date().toISOString().split("T")[0]}.csv`,
+    );
   };
 
   const totalPages = Math.ceil(total / limit);
 
   const statusTabs = [
-    { value: '', label: 'All Orders', count: stats.totalOrders },
-    { value: 'pending', label: 'Pending', count: stats.pendingOrders },
-    { value: 'confirmed', label: 'Confirmed', count: stats.confirmedOrders },
-    { value: 'shipped', label: 'Shipped', count: stats.shippedOrders },
-    { value: 'delivered', label: 'Delivered', count: stats.deliveredOrders },
-    { value: 'cancelled', label: 'Cancelled', count: stats.cancelledOrders },
+    { value: "", label: "All Orders", count: stats.totalOrders },
+    { value: "pending", label: "Pending", count: stats.pendingOrders },
+    { value: "confirmed", label: "Confirmed", count: stats.confirmedOrders },
+    { value: "shipped", label: "Shipped", count: stats.shippedOrders },
+    { value: "delivered", label: "Delivered", count: stats.deliveredOrders },
+    { value: "cancelled", label: "Cancelled", count: stats.cancelledOrders },
   ];
 
   return (
@@ -189,7 +212,10 @@ const OrderList = () => {
             </div>
 
             {/* Payment Status */}
-            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+            <Select
+              value={paymentStatusFilter}
+              onValueChange={setPaymentStatusFilter}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Payment Status" />
               </SelectTrigger>
@@ -219,7 +245,11 @@ const OrderList = () => {
             </div>
           </div>
 
-          {(search || statusFilter || paymentStatusFilter || dateFrom || dateTo) && (
+          {(search ||
+            statusFilter ||
+            paymentStatusFilter !== "all" ||
+            dateFrom ||
+            dateTo) && (
             <div className="mt-4">
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear All Filters
@@ -235,6 +265,7 @@ const OrderList = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]" />
                 <TableHead>Order</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
@@ -256,86 +287,153 @@ const OrderList = () => {
                   </TableRow>
                 ))
               ) : orders.length > 0 ? (
-                orders.map((order) => (
-                  <TableRow
-                    key={order._id}
-                    className="cursor-pointer hover:bg-accent/50"
-                    onClick={() => navigate(`/orders/${order._id}`)}
-                  >
-                    <TableCell>
-                      <div className="font-medium">#{order.orderNumber}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {order.trackingNumber && `Tracking: ${order.trackingNumber}`}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{formatDateTime(order.createdAt)}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{order.shippingAddress.fullName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {order.shippingAddress.phone}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{order.shippingAddress.wilaya}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {order.shippingAddress.commune}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        <span>{order.items.length} items</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-lg">{formatPrice(order.total)}</div>
-                      {order.hasReturn && (
-                        <Badge variant="destructive" className="text-xs">
-                          Return: {formatPrice(order.returnTotal)}
-                        </Badge>
+                orders.map((order) => {
+                  const isOpen = expandedOrders.has(order._id);
+
+                  return (
+                    <>
+                      {/* MAIN ROW */}
+                      <TableRow key={order._id} className="hover:bg-accent/50">
+                        {/* Expand toggle */}
+                        <TableCell
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand(order._id);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </TableCell>
+
+                        <TableCell
+                          onClick={() => navigate(`/orders/${order._id}`)}
+                        >
+                          <div className="font-medium">
+                            #{order.orderNumber}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.trackingNumber &&
+                              `Tracking: ${order.trackingNumber}`}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>{formatDateTime(order.createdAt)}</TableCell>
+
+                        <TableCell>
+                          <div className="font-medium">
+                            {order.shippingAddress.fullName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.shippingAddress.phone}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div>{order.shippingAddress.wilaya}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.shippingAddress.commune}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <span>{order.items.length} items</span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="font-semibold">
+                            {formatPrice(order.total)}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge className={getStatusColor(order.orderStatus)}>
+                            {order.orderStatus}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge
+                            variant={
+                              order.paymentStatus === "paid"
+                                ? "default"
+                                : order.paymentStatus === "pending"
+                                  ? "secondary"
+                                  : "destructive"
+                            }
+                          >
+                            {order.paymentStatus}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/orders/${order._id}`);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* COLLAPSED CONTENT */}
+                      {isOpen && (
+                        <TableRow className="bg-muted/30">
+                          <TableCell colSpan={10}>
+                            <div className="p-4 space-y-3">
+                              <h4 className="font-medium text-sm">
+                                Order Items
+                              </h4>
+
+                              <div className="space-y-2">
+                                {order.items.map((item) => (
+                                  <div
+                                    key={item._id}
+                                    className="flex justify-between items-center text-sm border-b pb-2"
+                                  >
+                                    <div>
+                                      <div className="font-medium">
+                                        {item.name["en"]}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Qty: {item.quantity}
+                                      </div>
+                                    </div>
+
+                                    <div className="font-semibold">
+                                      {formatPrice(item.price * item.quantity)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(order.orderStatus)}>
-                        {order.orderStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          order.paymentStatus === 'paid'
-                            ? 'default'
-                            : order.paymentStatus === 'pending'
-                            ? 'secondary'
-                            : 'destructive'
-                        }
-                      >
-                        {order.paymentStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/orders/${order._id}`);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                    </>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8">
                     <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">No orders found</p>
                     {(search || statusFilter) && (
-                      <Button variant="link" onClick={clearFilters} className="mt-2">
+                      <Button
+                        variant="link"
+                        onClick={clearFilters}
+                        className="mt-2"
+                      >
                         Clear filters
                       </Button>
                     )}
@@ -351,8 +449,8 @@ const OrderList = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of{' '}
-            {total} orders
+            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)}{" "}
+            of {total} orders
           </p>
           <div className="flex gap-2">
             <Button
@@ -369,7 +467,7 @@ const OrderList = () => {
                 return (
                   <Button
                     key={pageNum}
-                    variant={page === pageNum ? 'default' : 'outline'}
+                    variant={page === pageNum ? "default" : "outline"}
                     size="sm"
                     onClick={() => setPage(pageNum)}
                   >

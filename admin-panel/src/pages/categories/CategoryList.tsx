@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, FolderTree, Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useEffect, useState } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  FolderTree,
+  Image as ImageIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -11,17 +17,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +35,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,11 +45,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import api, { uploadFile } from '@/services/api';
-import { generateSlug, getImageUrl } from '@/utils';
-import type { Category } from '@/types';
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import api, { uploadFile } from "@/services/api";
+import { generateSlug, getImageUrl } from "@/utils";
+import type { Category } from "@/types";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const CategoryList = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -52,15 +59,29 @@ const CategoryList = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+    null,
+  );
   const [uploading, setUploading] = useState(false);
 
+  //expanded categories
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleCategory = (id: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const [formData, setFormData] = useState({
-    name: { ar: '', en: '', fr: '' },
-    description: { ar: '', en: '', fr: '' },
-    slug: '',
+    name: { ar: "", en: "", fr: "" },
+    description: { ar: "", en: "", fr: "" },
+    slug: "",
     parent: null as string | null,
-    image: '',
+    image: "",
     order: 0,
     isActive: true,
   });
@@ -71,13 +92,13 @@ const CategoryList = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/categories');
+      const response = await api.get("/categories");
       setCategories(response.data.data || []);
       setMainCategories(
-        response.data.data?.filter((cat: Category) => !cat.parent) || []
+        response.data.data?.filter((cat: Category) => !cat.parent) || [],
       );
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      console.error("Failed to fetch categories:", error);
     } finally {
       setLoading(false);
     }
@@ -89,11 +110,11 @@ const CategoryList = () => {
 
     setUploading(true);
     try {
-      const uploaded = await uploadFile(file, 'category');
+      const uploaded = await uploadFile(file, "category");
       setFormData((prev) => ({ ...prev, image: uploaded.url }));
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload image');
+      console.error("Upload failed:", error);
+      alert("Failed to upload image");
     } finally {
       setUploading(false);
     }
@@ -104,21 +125,25 @@ const CategoryList = () => {
       setEditingCategory(category);
       setFormData({
         name: category.name,
-        description: category.description as { ar: string, en: string, fr: string }  || { ar: '', en: '', fr: '' },
+        description: (category.description as {
+          ar: string;
+          en: string;
+          fr: string;
+        }) || { ar: "", en: "", fr: "" },
         slug: category.slug,
         parent: category.parent || null,
-        image: category.image || '',
+        image: category.image || "",
         order: category.order,
         isActive: category.isActive,
       });
     } else {
       setEditingCategory(null);
       setFormData({
-        name: { ar: '', en: '', fr: '' },
-        description: { ar: '', en: '', fr: '' },
-        slug: '',
+        name: { ar: "", en: "", fr: "" },
+        description: { ar: "", en: "", fr: "" },
+        slug: "",
         parent: null,
-        image: '',
+        image: "",
         order: 0,
         isActive: true,
       });
@@ -135,17 +160,17 @@ const CategoryList = () => {
 
       if (editingCategory) {
         await api.put(`/categories/${editingCategory._id}`, data);
-        alert('Category updated successfully!');
+        alert("Category updated successfully!");
       } else {
-        await api.post('/categories', data);
-        alert('Category created successfully!');
+        await api.post("/categories", data);
+        alert("Category created successfully!");
       }
 
       setDialogOpen(false);
       fetchCategories();
     } catch (error: any) {
-      console.error('Failed to save category:', error);
-      alert(error.response?.data?.message || 'Failed to save category');
+      console.error("Failed to save category:", error);
+      alert(error.response?.data?.message || "Failed to save category");
     }
   };
 
@@ -154,13 +179,13 @@ const CategoryList = () => {
 
     try {
       await api.delete(`/categories/${categoryToDelete._id}`);
-      alert('Category deleted successfully!');
+      alert("Category deleted successfully!");
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
       fetchCategories();
     } catch (error: any) {
-      console.error('Failed to delete category:', error);
-      alert(error.response?.data?.message || 'Failed to delete category');
+      console.error("Failed to delete category:", error);
+      alert(error.response?.data?.message || "Failed to delete category");
     }
   };
 
@@ -175,7 +200,8 @@ const CategoryList = () => {
         <div>
           <h2 className="text-2xl font-bold">Categories</h2>
           <p className="text-muted-foreground">
-            Manage product categories and subcategories ({categories.length} total)
+            Manage product categories and subcategories ({categories.length}{" "}
+            total)
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
@@ -190,6 +216,7 @@ const CategoryList = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]" />
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
@@ -212,10 +239,26 @@ const CategoryList = () => {
                 <>
                   {mainCategories.map((category) => {
                     const subcategories = getSubcategories(category._id);
+                    const isOpen = expandedCategories.has(category._id);
+
                     return (
                       <React.Fragment key={category._id}>
-                        {/* Main Category */}
+                        {/* MAIN CATEGORY ROW */}
                         <TableRow>
+                          {/* Expand toggle */}
+                          <TableCell
+                            onClick={() => toggleCategory(category._id)}
+                            className="cursor-pointer"
+                          >
+                            {subcategories.length > 0 &&
+                              (isOpen ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              ))}
+                          </TableCell>
+
+                          {/* Image */}
                           <TableCell>
                             {category.image ? (
                               <img
@@ -229,6 +272,8 @@ const CategoryList = () => {
                               </div>
                             )}
                           </TableCell>
+
+                          {/* Name */}
                           <TableCell>
                             <div className="font-medium flex items-center gap-2">
                               <FolderTree className="h-4 w-4 text-primary" />
@@ -238,20 +283,30 @@ const CategoryList = () => {
                               {category.name.ar}
                             </div>
                           </TableCell>
+
                           <TableCell>
                             <Badge>Main Category</Badge>
                           </TableCell>
+
                           <TableCell>
                             <code className="text-xs bg-muted px-2 py-1 rounded">
                               {category.slug}
                             </code>
                           </TableCell>
+
                           <TableCell>{category.order}</TableCell>
+
                           <TableCell>
-                            <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                              {category.isActive ? 'Active' : 'Inactive'}
+                            <Badge
+                              variant={
+                                category.isActive ? "default" : "secondary"
+                              }
+                            >
+                              {category.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </TableCell>
+
+                          {/* Actions */}
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
@@ -275,68 +330,90 @@ const CategoryList = () => {
                           </TableCell>
                         </TableRow>
 
-                        {/* Subcategories */}
-                        {subcategories.map((subcategory) => (
-                          <TableRow key={subcategory._id} className="bg-muted/30">
-                            <TableCell>
-                              {subcategory.image ? (
-                                <img
-                                  src={getImageUrl(subcategory.image)}
-                                  alt={subcategory.name.en}
-                                  className="h-10 w-10 rounded-lg object-cover ml-4"
-                                />
-                              ) : (
-                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center ml-4">
-                                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        {/* SUBCATEGORIES (COLLAPSED) */}
+                        {isOpen &&
+                          subcategories.map((subcategory) => (
+                            <TableRow
+                              key={subcategory._id}
+                              className="bg-muted/30"
+                            >
+                              <TableCell />
+
+                              <TableCell>
+                                {subcategory.image ? (
+                                  <img
+                                    src={getImageUrl(subcategory.image)}
+                                    alt={subcategory.name.en}
+                                    className="h-10 w-10 rounded-lg object-cover ml-4"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center ml-4">
+                                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                <div className="font-medium ml-6 flex items-center gap-2">
+                                  <span className="text-muted-foreground">
+                                    └─
+                                  </span>
+                                  {subcategory.name.en}
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium ml-6 flex items-center gap-2">
-                                <span className="text-muted-foreground">└─</span>
-                                {subcategory.name.en}
-                              </div>
-                              <div className="text-xs text-muted-foreground ml-6">
-                                {subcategory.name.ar}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">Subcategory</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <code className="text-xs bg-muted px-2 py-1 rounded">
-                                {subcategory.slug}
-                              </code>
-                            </TableCell>
-                            <TableCell>{subcategory.order}</TableCell>
-                            <TableCell>
-                              <Badge variant={subcategory.isActive ? 'default' : 'secondary'}>
-                                {subcategory.isActive ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleOpenDialog(subcategory)}
+                                <div className="text-xs text-muted-foreground ml-6">
+                                  {subcategory.name.ar}
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <Badge variant="outline">Subcategory</Badge>
+                              </TableCell>
+
+                              <TableCell>
+                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                  {subcategory.slug}
+                                </code>
+                              </TableCell>
+
+                              <TableCell>{subcategory.order}</TableCell>
+
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    subcategory.isActive
+                                      ? "default"
+                                      : "secondary"
+                                  }
                                 >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setCategoryToDelete(subcategory);
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                  {subcategory.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      handleOpenDialog(subcategory)
+                                    }
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setCategoryToDelete(subcategory);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
                       </React.Fragment>
                     );
                   })}
@@ -346,7 +423,11 @@ const CategoryList = () => {
                   <TableCell colSpan={7} className="text-center py-8">
                     <FolderTree className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">No categories found</p>
-                    <Button variant="link" onClick={() => handleOpenDialog()} className="mt-2">
+                    <Button
+                      variant="link"
+                      onClick={() => handleOpenDialog()}
+                      className="mt-2"
+                    >
                       Create your first category
                     </Button>
                   </TableCell>
@@ -362,12 +443,12 @@ const CategoryList = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Edit Category' : 'Create New Category'}
+              {editingCategory ? "Edit Category" : "Create New Category"}
             </DialogTitle>
             <DialogDescription>
               {editingCategory
-                ? 'Update category information'
-                : 'Add a new category to organize your products'}
+                ? "Update category information"
+                : "Add a new category to organize your products"}
             </DialogDescription>
           </DialogHeader>
 
@@ -439,7 +520,10 @@ const CategoryList = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        description: { ...prev.description, en: e.target.value },
+                        description: {
+                          ...prev.description,
+                          en: e.target.value,
+                        },
                       }))
                     }
                     rows={3}
@@ -451,7 +535,10 @@ const CategoryList = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        description: { ...prev.description, ar: e.target.value },
+                        description: {
+                          ...prev.description,
+                          ar: e.target.value,
+                        },
                       }))
                     }
                     rows={3}
@@ -464,7 +551,10 @@ const CategoryList = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        description: { ...prev.description, fr: e.target.value },
+                        description: {
+                          ...prev.description,
+                          fr: e.target.value,
+                        },
                       }))
                     }
                     rows={3}
@@ -479,7 +569,9 @@ const CategoryList = () => {
                 <Label>Slug</Label>
                 <Input
                   value={formData.slug}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                  }
                   placeholder="auto-generated"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -491,9 +583,12 @@ const CategoryList = () => {
               <div>
                 <Label>Parent Category</Label>
                 <Select
-                  value={formData.parent || 'none'}
+                  value={formData.parent || "none"}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, parent: value === 'none' ? null : value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      parent: value === "none" ? null : value,
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -520,7 +615,10 @@ const CategoryList = () => {
                   min="0"
                   value={formData.order}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, order: Number(e.target.value) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      order: Number(e.target.value),
+                    }))
                   }
                 />
               </div>
@@ -553,7 +651,9 @@ const CategoryList = () => {
                       variant="destructive"
                       size="icon"
                       className="absolute top-2 right-2 h-6 w-6"
-                      onClick={() => setFormData((prev) => ({ ...prev, image: '' }))}
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, image: "" }))
+                      }
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -561,7 +661,9 @@ const CategoryList = () => {
                 ) : (
                   <label className="flex flex-col items-center justify-center h-32 w-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors">
                     <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-xs text-muted-foreground">Upload Image</span>
+                    <span className="text-xs text-muted-foreground">
+                      Upload Image
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
@@ -571,16 +673,24 @@ const CategoryList = () => {
                     />
                   </label>
                 )}
-                {uploading && <p className="text-sm text-muted-foreground mt-2">Uploading...</p>}
+                {uploading && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Uploading...
+                  </p>
+                )}
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={uploading}>
-                {editingCategory ? 'Update Category' : 'Create Category'}
+                {editingCategory ? "Update Category" : "Create Category"}
               </Button>
             </DialogFooter>
           </form>
@@ -593,13 +703,16 @@ const CategoryList = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Category?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{categoryToDelete?.name.en}"? This action cannot
-              be undone.
+              Are you sure you want to delete "{categoryToDelete?.name.en}"?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

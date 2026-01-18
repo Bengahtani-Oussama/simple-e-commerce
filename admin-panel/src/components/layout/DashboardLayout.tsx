@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -12,9 +12,9 @@ import {
   X,
   LogOut,
   ChevronDown,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,11 +22,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuthStore, type AuthState } from '@/store/authStore';
-import { cn } from '@/utils';
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuthStore, type AuthState } from "@/store/authStore";
+import { cn } from "@/utils";
 
 const DashboardLayout = () => {
   const location = useLocation();
@@ -34,69 +34,83 @@ const DashboardLayout = () => {
   const { admin, logout } = useAuthStore() as AuthState;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved) setSidebarCollapsed(saved === "true");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const navigation = [
     {
-      name: 'Dashboard',
-      href: '/',
+      name: "Dashboard",
+      href: "/",
       icon: LayoutDashboard,
     },
     {
-      name: 'Products',
-      href: '/products',
+      name: "Products",
+      href: "/products",
       icon: Package,
     },
     {
-      name: 'Categories',
-      href: '/categories',
+      name: "Categories",
+      href: "/categories",
       icon: FolderTree,
     },
     {
-      name: 'Brands',
-      href: '/brands',
+      name: "Brands",
+      href: "/brands",
       icon: Tag,
     },
     {
-      name: 'Orders',
-      href: '/orders',
+      name: "Orders",
+      href: "/orders",
       icon: ShoppingCart,
     },
     {
-      name: 'Customers',
-      href: '/customers',
+      name: "Customers",
+      href: "/customers",
       icon: Users,
     },
     {
-      name: 'Settings',
-      href: '/settings',
+      name: "Settings",
+      href: "/settings",
       icon: Settings,
     },
   ];
 
-  const NavLinks = () => (
+  const NavLinks = ({ collapsed }: { collapsed: boolean }) => (
     <nav className="space-y-1 px-2">
       {navigation.map((item) => {
-        const isActive = location.pathname === item.href || 
-          (item.href !== '/' && location.pathname.startsWith(item.href));
-        
+        const isActive =
+          location.pathname === item.href ||
+          (item.href !== "/" && location.pathname.startsWith(item.href));
+
         return (
           <Link
             key={item.name}
             to={item.href}
             onClick={() => setSidebarOpen(false)}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              collapsed ? "justify-center" : "gap-3",
               isActive
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
             )}
+            title={collapsed ? item.name : undefined}
           >
-            <item.icon className="h-4 w-4" />
-            {item.name}
+            <item.icon className="h-5 w-5" />
+            {!collapsed && item.name}
           </Link>
         );
       })}
@@ -106,27 +120,44 @@ const DashboardLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 flex-col border-r bg-muted/40 lg:flex">
-        <div className="flex h-16 items-center border-b px-6">
+      <aside
+        className={cn(
+          "hidden flex-col border-r bg-muted/40 transition-all duration-300 lg:flex",
+          sidebarCollapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div className="flex h-16 items-center border-b px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <Package className="h-6 w-6 text-primary" />
-            <span className="text-lg">Admin Panel</span>
+            {!sidebarCollapsed && <span className="text-lg">Admin Panel</span>}
           </Link>
         </div>
         <ScrollArea className="flex-1 py-4">
-          <NavLinks />
+          <NavLinks collapsed={sidebarCollapsed} />
         </ScrollArea>
         <div className="border-t p-4">
-          <div className="flex items-center gap-3 rounded-lg bg-accent/50 p-3">
+          <div
+            className={cn(
+              "flex items-center rounded-lg bg-accent/50 p-3",
+              sidebarCollapsed ? "justify-center" : "gap-3",
+            )}
+          >
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {admin?.name.substring(0, 2).toUpperCase() || 'AD'}
+                {admin?.name.substring(0, 2).toUpperCase() || "AD"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{admin?.name || 'Admin'}</p>
-              <p className="text-xs text-muted-foreground truncate">{admin?.email}</p>
-            </div>
+
+            {!sidebarCollapsed && (
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium truncate">
+                  {admin?.name || "Admin"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {admin?.email}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -136,6 +167,20 @@ const DashboardLayout = () => {
         {/* Header */}
         <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
           {/* Mobile Menu */}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden lg:inline-flex"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+          >
+            {sidebarCollapsed ? (
+              <Menu className="h-5 w-5" />
+            ) : (
+              <X className="h-5 w-5" />
+            )}
+          </Button>
+
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild className="lg:hidden">
               <Button variant="ghost" size="icon">
@@ -150,7 +195,7 @@ const DashboardLayout = () => {
                 </Link>
               </div>
               <ScrollArea className="flex-1 py-4">
-                <NavLinks />
+                <NavLinks collapsed={false} />
               </ScrollArea>
             </SheetContent>
           </Sheet>
@@ -158,10 +203,12 @@ const DashboardLayout = () => {
           {/* Page Title - Hidden on mobile, shown on desktop */}
           <div className="hidden lg:block">
             <h1 className="text-xl font-semibold">
-              {navigation.find((item) => 
-                location.pathname === item.href || 
-                (item.href !== '/' && location.pathname.startsWith(item.href))
-              )?.name || 'Dashboard'}
+              {navigation.find(
+                (item) =>
+                  location.pathname === item.href ||
+                  (item.href !== "/" &&
+                    location.pathname.startsWith(item.href)),
+              )?.name || "Dashboard"}
             </h1>
           </div>
 
@@ -171,18 +218,24 @@ const DashboardLayout = () => {
               <Button variant="ghost" className="gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {admin?.name.substring(0, 2).toUpperCase() || 'AD'}
+                    {admin?.name.substring(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline">{admin?.name || 'Admin'}</span>
+                <span className="hidden md:inline">
+                  {admin?.name || "Admin"}
+                </span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{admin?.name || 'Admin'}</p>
-                  <p className="text-xs text-muted-foreground">{admin?.email}</p>
+                  <p className="text-sm font-medium">
+                    {admin?.name || "Admin"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {admin?.email}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
