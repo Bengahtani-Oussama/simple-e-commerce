@@ -45,7 +45,7 @@ const Dashboard = () => {
       const [ordersRes, productsRes ] = await Promise.all([
         api.get('/admin/orders?limit=5'),
         api.get('/products?limit=1'),
-        // api.get('/admin/users?limit=1'),
+        api.get('/admin/customers?limit=1'),
       ]);
 
       const mockStats: DashboardStats = {

@@ -1,0 +1,15 @@
+{
+  "name": "algeria-elearning-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:test\" \"npm run dev:admin-panel\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:admin-panel": "cd admin-panel && npm run dev",
+    "dev:frontend": "cd test && npm run dev",
+    "install:all": "npm install -f && cd test && npm install -f && cd ../backend && npm install -f"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

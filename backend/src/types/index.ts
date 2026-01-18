@@ -70,3 +70,57 @@ export interface EmailOptions {
   subject: string;
   html: string;
 }
+
+export interface Coupon {
+  _id: string;
+  code: string;
+  type: 'percentage' | 'fixed' | 'free_shipping';
+  discountPercentage?: number;
+  discountAmount?: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usagePerCustomer?: number;
+  usedCount: number;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  description?: string;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  isValid?: boolean; // Virtual field
+}
+
+export interface CouponFormData {
+  code: string;
+  type: 'percentage' | 'fixed' | 'free_shipping';
+  discountPercentage?: number;
+  discountAmount?: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usagePerCustomer: number;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  description?: string;
+}
+
+export interface CouponStats {
+  totalCoupons: number;
+  activeCoupons: number;
+  expiredCoupons: number;
+  usedCoupons: number;
+}
+
+export interface CouponUsage {
+  code: string;
+  type: 'percentage' | 'fixed' | 'free_shipping';
+  discount: number;
+  freeShipping: boolean;
+}

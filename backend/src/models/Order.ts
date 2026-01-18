@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOrderItem {
   _id?: mongoose.Types.ObjectId;
@@ -19,11 +19,18 @@ export interface IOrderItem {
   price: number;
   quantity: number;
   image?: string;
-  
+
   // Return tracking
-  returnStatus?: 'none' | 'requested' | 'approved' | 'rejected' | 'completed';
+  returnStatus?: "none" | "requested" | "approved" | "rejected" | "completed";
   returnReason?: string;
   returnQuantity?: number;
+}
+
+export interface ICouponUsage {
+  code: string;
+  type: "percentage" | "fixed" | "free_shipping";
+  discount: number;
+  freeShipping: boolean;
 }
 
 export interface IShippingAddress {
@@ -38,39 +45,49 @@ export interface IShippingAddress {
 export interface IOrder extends Document {
   orderNumber: string; // Auto-generated unique order number
   user: mongoose.Types.ObjectId;
-  
+
   // Order Items
   items: IOrderItem[];
-  
+
   // Pricing
   subtotal: number;
   shippingCost: number; // Set based on wilaya
   total: number;
-  
+
   // Shipping Details
   shippingAddress: IShippingAddress;
-  shippingMethod: 'home_delivery' | 'office_pickup'; // Home delivery or pickup from office
-  
+  shippingMethod: "home_delivery" | "office_pickup"; // Home delivery or pickup from office
+
   // Payment
-  paymentMethod: 'cash_on_delivery';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  
+  paymentMethod: "cash_on_delivery";
+  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+
   // Order Status
-  orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  
+  orderStatus:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
+
   // Tracking
   trackingNumber?: string;
   estimatedDeliveryDate?: Date;
   deliveredAt?: Date;
-  
+
   // Notes
   customerNote?: string;
   adminNote?: string;
-  
+
   // Return/Refund
   hasReturn: boolean;
   returnTotal: number; // Total amount for returned items
-  
+
+  // Coupon
+  coupon?: ICouponUsage;
+  couponDiscount: number; // Amount discounted by coupon
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -79,7 +96,7 @@ export interface IOrder extends Document {
 const orderItemSchema = new Schema<IOrderItem>({
   product: {
     type: Schema.Types.ObjectId,
-    ref: 'Product',
+    ref: "Product",
     required: true,
   },
   variant: {
@@ -116,8 +133,8 @@ const orderItemSchema = new Schema<IOrderItem>({
   image: String,
   returnStatus: {
     type: String,
-    enum: ['none', 'requested', 'approved', 'rejected', 'completed'],
-    default: 'none',
+    enum: ["none", "requested", "approved", "rejected", "completed"],
+    default: "none",
   },
   returnReason: String,
   returnQuantity: {
@@ -159,7 +176,7 @@ const orderSchema = new Schema<IOrder>(
     },
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     items: {
@@ -167,7 +184,7 @@ const orderSchema = new Schema<IOrder>(
       required: true,
       validate: {
         validator: (items: IOrderItem[]) => items.length > 0,
-        message: 'Order must have at least one item',
+        message: "Order must have at least one item",
       },
     },
     subtotal: {
@@ -180,6 +197,19 @@ const orderSchema = new Schema<IOrder>(
       required: true,
       min: 0,
     },
+    coupon: {
+      code: String,
+      type: {
+        type: String,
+        enum: ["percentage", "fixed", "free_shipping"],
+      },
+      discount: Number,
+      freeShipping: Boolean,
+    },
+    couponDiscount: {
+      type: Number,
+      default: 0,
+    },
     total: {
       type: Number,
       required: true,
@@ -191,23 +221,30 @@ const orderSchema = new Schema<IOrder>(
     },
     shippingMethod: {
       type: String,
-      enum: ['home_delivery', 'office_pickup'],
+      enum: ["home_delivery", "office_pickup"],
       required: true,
     },
     paymentMethod: {
       type: String,
-      enum: ['cash_on_delivery'],
-      default: 'cash_on_delivery',
+      enum: ["cash_on_delivery"],
+      default: "cash_on_delivery",
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'refunded'],
-      default: 'pending',
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
     },
     orderStatus: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
+      default: "pending",
     },
     trackingNumber: String,
     estimatedDeliveryDate: Date,
@@ -225,29 +262,32 @@ const orderSchema = new Schema<IOrder>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Generate unique order number before saving
-orderSchema.pre('save', async function (next) {
+orderSchema.pre("save", async function (next) {
   if (this.isNew) {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+
     // Find the last order of today
-    const lastOrder = await mongoose.model('Order').findOne({
-      orderNumber: new RegExp(`^${year}${month}${day}`),
-    }).sort({ orderNumber: -1 });
-    
+    const lastOrder = await mongoose
+      .model("Order")
+      .findOne({
+        orderNumber: new RegExp(`^${year}${month}${day}`),
+      })
+      .sort({ orderNumber: -1 });
+
     let sequence = 1;
     if (lastOrder) {
       const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
       sequence = lastSequence + 1;
     }
-    
-    this.orderNumber = `${year}${month}${day}${sequence.toString().padStart(4, '0')}`;
+
+    this.orderNumber = `${year}${month}${day}${sequence.toString().padStart(4, "0")}`;
   }
   next();
 });
@@ -258,4 +298,4 @@ orderSchema.index({ user: 1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 
-export default mongoose.model<IOrder>('Order', orderSchema);
+export default mongoose.model<IOrder>("Order", orderSchema);

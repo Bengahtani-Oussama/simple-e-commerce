@@ -12,6 +12,7 @@ import {
   X,
   LogOut,
   ChevronDown,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -75,6 +76,11 @@ const DashboardLayout = () => {
       name: "Orders",
       href: "/orders",
       icon: ShoppingCart,
+    },
+    {
+      name: "Coupons",
+      href: "/coupons",
+      icon: Ticket,
     },
     {
       name: "Customers",

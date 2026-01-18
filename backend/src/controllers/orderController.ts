@@ -10,7 +10,7 @@ import { sendEmail } from '../utils/sendEmail';
 // @route   POST /api/orders
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { shippingAddressId, shippingMethod, shippingCost, customerNote } = req.body;
+    const { shippingAddressId, shippingMethod, shippingCost, customerNote, couponDiscount } = req.body;
 
     // Get user cart
     const cart = await Cart.findOne({ user: req.user?.id });
@@ -69,7 +69,8 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
 
     // Calculate total
     const subtotal = cart.subtotal;
-    const total = subtotal + shippingCost;
+    const total = subtotal + shippingCost - couponDiscount
+    // const total = subtotal + shippingCost;
 
     // Convert cart items to plain objects
     const orderItems = cart.items.map((item) => ({
