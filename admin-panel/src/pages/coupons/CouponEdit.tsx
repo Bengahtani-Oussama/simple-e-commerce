@@ -1,7 +1,6 @@
-// admin-panel/src/pages/coupons/CouponUpdate.tsx
-
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+// admin-panel/src/pages/coupons/CouponEdit.tsx
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Save,
@@ -9,233 +8,309 @@ import {
   DollarSign,
   Truck,
   AlertCircle,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Trash2,
+  TrendingUp,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import api from '@/services/api';
+import { formatPrice, formatDate } from '@/utils';
+import type { Coupon } from '@/types';
 
-import api from "@/services/api";
-import { formatPrice } from "@/utils";
-
-type CouponType = "percentage" | "fixed" | "free_shipping";
-
-interface CouponFormState {
-  code: string;
-  type: CouponType;
-  discountPercentage: number;
-  discountAmount: number;
-  minimumOrderValue: number;
-  maximumDiscount: number;
-  usageLimit: number;
-  usagePerCustomer: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  description: string;
-}
-
-const CouponUpdate = () => {
+const CouponEdit = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [usage, setUsage] = useState({ timesUsed: 0, totalDiscountGiven: 0 });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-
-  const [formState, setFormState] = useState<CouponFormState>({
-    code: "",
-    type: "percentage",
-    discountPercentage: 0,
+  const [formData, setFormData] = useState({
+    code: '',
+    type: 'percentage' as 'percentage' | 'fixed' | 'free_shipping',
+    discountPercentage: 10,
     discountAmount: 0,
-    minimumOrderValue: 0,
-    maximumDiscount: 0,
+    minOrderValue: 0,
+    maxDiscount: 0,
     usageLimit: 0,
     usagePerCustomer: 1,
-    startDate: "",
-    endDate: "",
+    startDate: '',
+    endDate: '',
     isActive: true,
-    description: "",
+    description: '',
   });
 
-  /* -------------------------------------------------------------------------- */
-  /*                              Fetch Coupon Data                              */
-  /* -------------------------------------------------------------------------- */
   useEffect(() => {
-    const fetchCoupon = async () => {
-      try {
-        const response = await api.get(`/coupons/${id}`);
-        const coupon = response.data.data.coupon;
-
-        setFormState({
-          code: coupon.code ?? "",
-          type: coupon.type,
-          discountPercentage: coupon.discountPercentage ?? 0,
-          discountAmount: coupon.discountAmount ?? 0,
-          minimumOrderValue: coupon.minOrderValue ?? 0,
-          maximumDiscount: coupon.maxDiscount ?? 0,
-          usageLimit: coupon.usageLimit ?? 0,
-          usagePerCustomer: coupon.usagePerCustomer ?? 1,
-          startDate: coupon.startDate ?? "",
-          endDate: coupon.endDate ?? "",
-          isActive: coupon.isActive ?? true,
-          description: coupon.description ?? "",
-        });
-      } catch (error) {
-        console.error("Failed to fetch coupon:", error);
-        alert("Failed to load coupon");
-        navigate("/coupons");
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
     fetchCoupon();
-  }, [id, navigate]);
+  }, [id]);
 
-  /* -------------------------------------------------------------------------- */
-  /*                               Submit Update                                 */
-  /* -------------------------------------------------------------------------- */
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsLoading(true);
-
+  const fetchCoupon = async () => {
     try {
-      const payload: any = {
-        code: formState.code.toUpperCase(),
-        type: formState.type,
-        description: formState.description,
-        isActive: formState.isActive,
-        usagePerCustomer: formState.usagePerCustomer,
-      };
+      const response = await api.get(`/coupons/${id}`);
+      const couponData = response.data.data.coupon;
+      const usageData = response.data.data.usage;
 
-      if (formState.type === "percentage") {
-        payload.discountPercentage = formState.discountPercentage;
-        if (formState.maximumDiscount > 0) {
-          payload.maxDiscount = formState.maximumDiscount;
-        }
-      }
+      setCoupon(couponData);
+      setUsage(usageData);
 
-      if (formState.type === "fixed") {
-        payload.discountAmount = formState.discountAmount;
-      }
-
-      if (formState.minimumOrderValue > 0) {
-        payload.minOrderValue = formState.minimumOrderValue;
-      }
-
-      if (formState.usageLimit > 0) {
-        payload.usageLimit = formState.usageLimit;
-      }
-
-      if (formState.startDate) {
-        payload.startDate = formState.startDate;
-      }
-
-      if (formState.endDate) {
-        payload.endDate = formState.endDate;
-      }
-
-      await api.put(`/coupons/${id}`, payload);
-      alert("Coupon updated successfully");
-      navigate("/coupons");
-    } catch (error: any) {
-      console.error("Failed to update coupon:", error);
-      alert(error.response?.data?.message || "Failed to update coupon");
+      setFormData({
+        code: couponData.code,
+        type: couponData.type,
+        discountPercentage: couponData.discountPercentage || 10,
+        discountAmount: couponData.discountAmount || 0,
+        minOrderValue: couponData.minOrderValue || 0,
+        maxDiscount: couponData.maxDiscount || 0,
+        usageLimit: couponData.usageLimit || 0,
+        usagePerCustomer: couponData.usagePerCustomer || 1,
+        startDate: couponData.startDate
+          ? new Date(couponData.startDate).toISOString().slice(0, 16)
+          : '',
+        endDate: couponData.endDate
+          ? new Date(couponData.endDate).toISOString().slice(0, 16)
+          : '',
+        isActive: couponData.isActive,
+        description: couponData.description || '',
+      });
+    } catch (error) {
+      console.error('Failed to fetch coupon:', error);
+      alert('Failed to load coupon');
+      navigate('/coupons');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  if (isFetching) {
-    return (
-       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading coupons...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSubmit = async () => {
+    setSaving(true);
 
-  if(!formState) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-muted-foreground">Coupon not found</p>
-        </div>
-      </div>
-    );
-  }
+    try {
+      const data: any = {
+        code: formData.code.toUpperCase(),
+        type: formData.type,
+        description: formData.description,
+        isActive: formData.isActive,
+        usagePerCustomer: formData.usagePerCustomer,
+      };
 
-   const getCouponPreview = () => {
-    if (formState.type === 'percentage') {
-      return `${formState.discountPercentage}% OFF${formState.maximumDiscount > 0 ? ` (max ${formatPrice(formState.maximumDiscount)})` : ''}`;
-    } else if (formState.type === 'fixed') {
-      return `${formatPrice(formState.discountAmount)} OFF`;
+      if (formData.type === 'percentage') {
+        data.discountPercentage = formData.discountPercentage;
+        if (formData.maxDiscount > 0) {
+          data.maxDiscount = formData.maxDiscount;
+        }
+      } else if (formData.type === 'fixed') {
+        data.discountAmount = formData.discountAmount;
+      }
+
+      if (formData.minOrderValue > 0) {
+        data.minOrderValue = formData.minOrderValue;
+      }
+      if (formData.usageLimit > 0) {
+        data.usageLimit = formData.usageLimit;
+      }
+      if (formData.startDate) {
+        data.startDate = formData.startDate;
+      }
+      if (formData.endDate) {
+        data.endDate = formData.endDate;
+      }
+
+      await api.put(`/coupons/${id}`, data);
+      alert('Coupon updated successfully!');
+      navigate('/coupons');
+    } catch (error: any) {
+      console.error('Failed to update coupon:', error);
+      alert(error.response?.data?.message || 'Failed to update coupon');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/coupons/${id}`);
+      alert('Coupon deleted successfully!');
+      navigate('/coupons');
+    } catch (error: any) {
+      console.error('Failed to delete coupon:', error);
+      alert(error.response?.data?.message || 'Failed to delete coupon');
+    }
+  };
+
+  const getCouponPreview = () => {
+    if (formData.type === 'percentage') {
+      return `${formData.discountPercentage}% OFF${formData.maxDiscount > 0 ? ` (max ${formatPrice(formData.maxDiscount)})` : ''}`;
+    } else if (formData.type === 'fixed') {
+      return `${formatPrice(formData.discountAmount)} OFF`;
     } else {
       return 'FREE SHIPPING';
     }
   };
 
-  /* -------------------------------------------------------------------------- */
-  /*                                   Render                                    */
-  /* -------------------------------------------------------------------------- */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading coupon...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!coupon) return null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/coupons")}
+            onClick={() => navigate('/coupons')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">Update Coupon</h2>
+            <h2 className="text-2xl font-bold">Edit Coupon</h2>
             <p className="text-muted-foreground">
-              Modify an existing discount coupon
+              Code: <span className="font-mono font-semibold">{coupon.code}</span>
             </p>
           </div>
         </div>
-        <Button onClick={handleSubmit} disabled={isLoading}>
-          <Save className="mr-2 h-4 w-4" />
-          {isLoading ? "Updating..." : "Update Coupon"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/coupons')}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Usage Statistics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Usage Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">Times Used</div>
+                  <div className="text-2xl font-bold">{usage.timesUsed}</div>
+                  {formData.usageLimit > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      of {formData.usageLimit} limit
+                    </div>
+                  )}
+                </div>
+                <div className="border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">
+                    Total Discount Given
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {formatPrice(usage.totalDiscountGiven)}
+                  </div>
+                </div>
+                <div className="border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">Created On</div>
+                  <div className="text-sm font-medium">
+                    {formatDate(coupon.createdAt)}
+                  </div>
+                  {coupon.createdBy && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      by {coupon.createdBy.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Coupon Code */}
           <Card>
             <CardHeader>
               <CardTitle>Coupon Code</CardTitle>
-              <CardDescription>
-                Coupon code cannot be changed after creation
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Input value={formState.code} disabled className="font-mono" />
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Coupon Code *</Label>
+                <Input
+                  required
+                  value={formData.code}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      code: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  className="font-mono text-lg mt-2"
+                  maxLength={50}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  3-50 characters, letters and numbers only
+                </p>
+              </div>
+
+              <div>
+                <Label>Description (Optional)</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  maxLength={500}
+                  className="mt-2"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -245,169 +320,272 @@ const CouponUpdate = () => {
               <CardTitle>Discount Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Label>Discount Type</Label>
-              <Select value={formState.type} disabled>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">
-                    <Percent className="inline mr-2 h-4 w-4" />
-                    Percentage
-                  </SelectItem>
-                  <SelectItem value="fixed">
-                    <DollarSign className="inline mr-2 h-4 w-4" />
-                    Fixed Amount
-                  </SelectItem>
-                  <SelectItem value="free_shipping">
-                    <Truck className="inline mr-2 h-4 w-4" />
-                    Free Shipping
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <Label>Discount Type *</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: any) =>
+                    setFormData((prev) => ({ ...prev, type: value }))
+                  }
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">
+                      <div className="flex items-center gap-2">
+                        <Percent className="h-4 w-4" />
+                        Percentage Discount
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="fixed">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Fixed Amount
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="free_shipping">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        Free Shipping
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {formState.type === "percentage" && (
+              {formData.type === 'percentage' && (
                 <>
-                  <Label>Discount Percentage</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={formState.discountPercentage}
-                    onChange={(e) =>
-                      setFormState((previous) => ({
-                        ...previous,
-                        discountPercentage: Number(e.target.value),
-                      }))
-                    }
-                  />
+                  <div>
+                    <Label>Discount Percentage *</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="number"
+                        required
+                        min="1"
+                        max="100"
+                        value={formData.discountPercentage}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            discountPercentage: Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <span className="text-2xl font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
 
-                  <Label>Maximum Discount</Label>
-                  <Input
-                    type="number"
-                    value={formState.maximumDiscount || ""}
-                    onChange={(e) =>
-                      setFormState((previous) => ({
-                        ...previous,
-                        maximumDiscount: Number(e.target.value),
-                      }))
-                    }
-                    placeholder="No limit"
-                  />
+                  <div>
+                    <Label>Maximum Discount (Optional)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={formData.maxDiscount || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          maxDiscount: Number(e.target.value),
+                        }))
+                      }
+                      className="mt-2"
+                    />
+                  </div>
                 </>
               )}
 
-              {formState.type === "fixed" && (
-                <>
-                  <Label>Discount Amount</Label>
+              {formData.type === 'fixed' && (
+                <div>
+                  <Label>Discount Amount (DA) *</Label>
                   <Input
                     type="number"
-                    value={formState.discountAmount}
+                    required
+                    min="1"
+                    value={formData.discountAmount || ''}
                     onChange={(e) =>
-                      setFormState((previous) => ({
-                        ...previous,
+                      setFormData((prev) => ({
+                        ...prev,
                         discountAmount: Number(e.target.value),
                       }))
                     }
+                    className="mt-2"
                   />
-                </>
+                </div>
               )}
+
+              <Separator />
+
+              <div>
+                <Label>Minimum Order Value (Optional)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.minOrderValue || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      minOrderValue: Number(e.target.value),
+                    }))
+                  }
+                  className="mt-2"
+                />
+              </div>
             </CardContent>
           </Card>
 
-          {/* Validity */}
+          {/* Usage Limits */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage Limits</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Total Usage Limit (Optional)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.usageLimit || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      usageLimit: Number(e.target.value),
+                    }))
+                  }
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currently used {usage.timesUsed} times
+                </p>
+              </div>
+
+              <div>
+                <Label>Usage Per Customer *</Label>
+                <Input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.usagePerCustomer}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      usagePerCustomer: Number(e.target.value),
+                    }))
+                  }
+                  className="mt-2"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Validity Period */}
           <Card>
             <CardHeader>
               <CardTitle>Validity Period</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <Input
-                type="datetime-local"
-                value={formState.startDate}
-                onChange={(e) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    startDate: e.target.value,
-                  }))
-                }
-              />
-              <Input
-                type="datetime-local"
-                value={formState.endDate}
-                onChange={(e) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    endDate: e.target.value,
-                  }))
-                }
-              />
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Start Date (Optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        startDate: e.target.value,
+                      }))
+                    }
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label>End Date (Optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        endDate: e.target.value,
+                      }))
+                    }
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+
+              {formData.startDate && formData.endDate && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {new Date(formData.endDate) > new Date(formData.startDate) ? (
+                      <span className="text-green-600">✓ End date is after start date</span>
+                    ) : (
+                      <span className="text-red-600">✗ End date must be after start date</span>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <Card >
+          {/* Preview */}
+          <Card className="sticky top-4">
             <CardHeader>
               <CardTitle>Coupon Preview</CardTitle>
-              <CardDescription>How customers will see it</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center space-y-4">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                  {formState.type === "percentage" && (
+                  {formData.type === 'percentage' && (
                     <Percent className="h-8 w-8 text-primary" />
                   )}
-                  {formState.type === "fixed" && (
+                  {formData.type === 'fixed' && (
                     <DollarSign className="h-8 w-8 text-primary" />
                   )}
-                  {formState.type === "free_shipping" && (
+                  {formData.type === 'free_shipping' && (
                     <Truck className="h-8 w-8 text-primary" />
                   )}
                 </div>
 
                 <div>
                   <div className="font-mono text-2xl font-bold text-primary mb-2">
-                    {formState.code || "COUPONCODE"}
+                    {formData.code}
                   </div>
-                  <div className="text-lg font-semibold mb-1">
-                    {getCouponPreview()}
-                  </div>
-                  {formState.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {formState.description}
-                    </p>
+                  <div className="text-lg font-semibold mb-1">{getCouponPreview()}</div>
+                  {formData.description && (
+                    <p className="text-sm text-muted-foreground">{formData.description}</p>
                   )}
                 </div>
 
                 <Separator />
 
                 <div className="text-left space-y-2 text-sm">
-                  {formState.minimumOrderValue > 0 && (
+                  {formData.minOrderValue > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Min. Order:</span>
                       <span className="font-medium">
-                        {formatPrice(formState.minimumOrderValue)}
+                        {formatPrice(formData.minOrderValue)}
                       </span>
                     </div>
                   )}
-                  {formState.usageLimit > 0 && (
+                  {formData.usageLimit > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total Uses:</span>
-                      <span className="font-medium">{formState.usageLimit}</span>
+                      <span className="text-muted-foreground">Limit:</span>
+                      <span className="font-medium">
+                        {usage.timesUsed} / {formData.usageLimit}
+                      </span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Per Customer:</span>
-                    <span className="font-medium">
-                      {formState.usagePerCustomer}
-                    </span>
-                  </div>
-                  {formState.endDate && (
+                  {formData.endDate && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Expires:</span>
                       <span className="font-medium">
-                        {new Date(formState.endDate).toLocaleDateString()}
+                        {new Date(formData.endDate).toLocaleDateString()}
                       </span>
                     </div>
                   )}
@@ -415,27 +593,61 @@ const CouponUpdate = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Status */}
           <Card>
             <CardHeader>
               <CardTitle>Status</CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-between items-center">
-              <Label>Active</Label>
-              <Switch
-                checked={formState.isActive}
-                onCheckedChange={(checked) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    isActive: checked,
-                  }))
-                }
-              />
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Active Status</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Coupon can be used by customers
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, isActive: checked }))
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
-      </form>
+      </div>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Coupon?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete coupon "{coupon.code}"? This action cannot be
+              undone.
+              {usage.timesUsed > 0 && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                  <strong>Warning:</strong> This coupon has been used {usage.timesUsed}{' '}
+                  time(s). Deletion may not be possible.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
-export default CouponUpdate;
+export default CouponEdit;
