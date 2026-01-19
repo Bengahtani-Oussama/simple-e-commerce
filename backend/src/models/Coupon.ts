@@ -123,7 +123,7 @@ const couponSchema = new Schema<ICoupon>(
 );
 
 // Indexes for performance
-couponSchema.index({ code: 1 });
+// couponSchema.index({ code: 1 }, { unique: true });
 couponSchema.index({ isActive: 1 });
 couponSchema.index({ endDate: 1 });
 

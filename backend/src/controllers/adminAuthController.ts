@@ -50,13 +50,13 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
     const accessToken = generateAccessToken({
       id: admin._id.toString(),
       email: admin.email,
-      role: 'admin',
+      role: admin.role,
     });
 
     const refreshToken = generateRefreshToken({
       id: admin._id.toString(),
       email: admin.email,
-      role: 'admin',
+      role: admin.role,
     });
 
     // Save refresh token
@@ -121,7 +121,7 @@ export const adminRefreshToken = async (req: Request, res: Response): Promise<vo
     const newAccessToken = generateAccessToken({
       id: admin._id.toString(),
       email: admin.email,
-      role: 'admin',
+      role: admin.role,
     });
 
     res.status(200).json({
@@ -272,6 +272,7 @@ export const getAdminProfile = async (req: AuthRequest, res: Response): Promise<
           id: admin._id,
           name: admin.name,
           email: admin.email,
+          role: admin.role,
           permissions: admin.permissions,
         },
       },

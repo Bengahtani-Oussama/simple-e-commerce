@@ -313,3 +313,58 @@ export interface CouponStats {
   expiredCoupons: number;
   usedCoupons: number;
 }
+
+export interface InventoryItem {
+  productId: string;
+  productName: { ar: string; en: string; fr: string };
+  productSlug: string;
+  category: { _id: string; name: { en: string } };
+  brand?: { _id: string; name: string };
+  variantId: string;
+  sku: string;
+  size?: string;
+  color?: string;
+  material?: string;
+  stock: number;
+  price?: number;
+  isActive: boolean;
+  image?: string;
+  isLowStock: boolean;
+}
+
+export interface InventoryStats {
+  totalProducts: number;
+  totalVariants: number;
+  lowStockItems: number;
+  outOfStock: number;
+  totalStockValue: number;
+}
+
+export interface StockHistory {
+  _id: string;
+  product: string | Product;
+  variant: string;
+  sku: string;
+  type: 'adjustment' | 'sale' | 'return' | 'restock' | 'correction';
+  quantityChange: number;
+  previousStock: number;
+  newStock: number;
+  reason?: string;
+  performedBy: { _id: string; name: string; email: string };
+  orderId?: string;
+  createdAt: string;
+}
+
+export interface LowStockAlert {
+  productId: string;
+  productName: { ar: string; en: string; fr: string };
+  category: { _id: string; name: { en: string } };
+  brand?: { _id: string; name: string };
+  variantId: string;
+  sku: string;
+  size?: string;
+  color?: string;
+  stock: number;
+  image?: string;
+  urgency: 'critical' | 'high' | 'medium';
+}

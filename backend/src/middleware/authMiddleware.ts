@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest, JWTPayload } from '../types';
+import Admin from '../models/Admin';
 
 export const protect = async (
   req: AuthRequest,
@@ -29,11 +30,21 @@ export const protect = async (
       process.env.JWT_ACCESS_SECRET!
     ) as JWTPayload;
 
+    // Fetch user from database to get permissions
+    let userPermissions: string[] = [];
+    if (decoded.role !== 'customer') {
+      const adminUser = await Admin.findById(decoded.id).select('permissions');
+      if (adminUser) {
+        userPermissions = adminUser.permissions;
+      }
+    }
+
     // Attach user to request
     req.user = {
       id: decoded.id,
       email: decoded.email,
       role: decoded.role,
+      permissions: userPermissions,
     };
 
     next();
@@ -61,16 +72,52 @@ export const isCustomer = (
   next();
 };
 
-// Middleware to check if user is admin
+// Middleware to check if user is admin (any admin role)
 export const isAdmin = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {
-  if (req.user?.role !== 'admin') {
+  const adminRoles = ['admin' , 'super_admin', 'manager', 'staff', 'viewer'];
+  if (!req.user?.role || !adminRoles.includes(req.user.role)) {
     res.status(403).json({
       success: false,
       message: 'Access denied. Admin role required.',
+    });
+    return;
+  }
+  next();
+};
+
+// Middleware to check specific permissions
+export const hasPermission = (requiredPermissions: string | string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const userPermissions = req.user?.permissions || [];
+    const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+
+    const hasRequiredPermission = permissions.some(permission => userPermissions.includes(permission));
+
+    if (!hasRequiredPermission) {
+      res.status(403).json({
+        success: false,
+        message: `Access denied. Required permission(s): ${permissions.join(', ')}`,
+      });
+      return;
+    }
+    next();
+  };
+};
+
+// Middleware to check if user is super admin
+export const isSuperAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (req.user?.role !== 'super_admin') {
+    res.status(403).json({
+      success: false,
+      message: 'Access denied. Super admin role required.',
     });
     return;
   }

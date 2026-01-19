@@ -1,5 +1,5 @@
 // admin-panel/src/pages/settings/Settings.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   User,
   Lock,
@@ -9,6 +9,12 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
+  Plus,
+  Edit,
+  Trash2,
+  MoreHorizontal,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +26,11 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import api from '@/services/api';
 import { getInitials } from '@/utils';
@@ -48,6 +59,172 @@ const Settings = () => {
     weeklyReports: true,
     marketingEmails: false,
   });
+
+  // Staff Management State
+  const [staff, setStaff] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [staffForm, setStaffForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'staff',
+    permissions: [] as string[],
+  });
+
+  // Available permissions
+  const availablePermissions = [
+    { id: 'manage_users', label: 'Manage Users', description: 'Create and manage staff accounts' },
+    { id: 'manage_products', label: 'Manage Products', description: 'Add, edit, and delete products' },
+    { id: 'manage_orders', label: 'Manage Orders', description: 'Process and manage customer orders' },
+    { id: 'manage_coupons', label: 'Manage Coupons', description: 'Create and manage discount coupons' },
+    { id: 'manage_brands', label: 'Manage Brands', description: 'Add and manage product brands' },
+    { id: 'manage_categories', label: 'Manage Categories', description: 'Organize products by categories' },
+    { id: 'view_reports', label: 'View Reports', description: 'Access sales and performance reports' },
+    { id: 'manage_settings', label: 'Manage Settings', description: 'Configure system settings' },
+  ];
+
+  // Role permissions mapping
+  const rolePermissions: { [key: string]: string[] } = {
+    super_admin: ['manage_users', 'manage_products', 'manage_orders', 'manage_coupons', 'manage_brands', 'manage_categories', 'view_reports', 'manage_settings'],
+    manager: ['manage_products', 'manage_orders', 'manage_coupons', 'manage_brands', 'manage_categories', 'view_reports'],
+    staff: ['manage_orders', 'view_reports'],
+    viewer: ['view_reports']
+  };
+
+  // Load staff members
+  const loadStaff = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/admin/staff');
+      setStaff(response.data.data);
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to load staff members',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle role change
+  const handleRoleChange = (role: string) => {
+    setStaffForm(prev => ({
+      ...prev,
+      role,
+      permissions: rolePermissions[role] || []
+    }));
+  };
+
+  // Handle permission toggle
+  const handlePermissionToggle = (permissionId: string) => {
+    setStaffForm(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permissionId)
+        ? prev.permissions.filter(p => p !== permissionId)
+        : [...prev.permissions, permissionId]
+    }));
+  };
+
+  // Create staff member
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      await api.post('/admin/staff', staffForm);
+      setMessage({ type: 'success', text: 'Staff member created successfully!' });
+      setStaffForm({ name: '', email: '', password: '', role: 'staff', permissions: [] });
+      setShowCreateForm(false);
+      loadStaff();
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to create staff member',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update staff member
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      await api.put(`/admin/staff/${editingStaff._id}`, {
+        name: staffForm.name,
+        email: staffForm.email,
+        role: staffForm.role,
+        permissions: staffForm.permissions,
+        isActive: editingStaff.isActive
+      });
+      setMessage({ type: 'success', text: 'Staff member updated successfully!' });
+      setEditingStaff(null);
+      setStaffForm({ name: '', email: '', password: '', role: 'staff', permissions: [] });
+      loadStaff();
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to update staff member',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete staff member
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!confirm('Are you sure you want to delete this staff member?')) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      await api.delete(`/admin/staff/${staffId}`);
+      setMessage({ type: 'success', text: 'Staff member deleted successfully!' });
+      loadStaff();
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to delete staff member',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Start editing
+  const startEditing = (staffMember: any) => {
+    setEditingStaff(staffMember);
+    setStaffForm({
+      name: staffMember.name,
+      email: staffMember.email,
+      password: '',
+      role: staffMember.role,
+      permissions: staffMember.permissions || []
+    });
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingStaff(null);
+    setStaffForm({ name: '', email: '', password: '', role: 'staff', permissions: [] });
+  };
+
+  // Load staff on component mount
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      loadStaff();
+    }
+  }, [activeTab]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,38 +387,329 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          {/* Staff Management Preview */}
+          {/* Staff Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Staff Management
-                <Badge variant="outline">Coming Soon</Badge>
-              </CardTitle>
-              <CardDescription>
-                Manage admin users and their permissions
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Staff Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage admin users and their permissions
+                  </CardDescription>
+                </div>
+                <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Staff
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add New Staff Member</DialogTitle>
+                      <DialogDescription>
+                        Create a new staff account with custom permissions
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateStaff} className="space-y-6">
+                      <div className="grid gap-4">
+                        <div>
+                          <Label>Full Name *</Label>
+                          <Input
+                            value={staffForm.name}
+                            onChange={(e) => setStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                            required
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Email Address *</Label>
+                          <Input
+                            type="email"
+                            value={staffForm.email}
+                            onChange={(e) => setStaffForm(prev => ({ ...prev, email: e.target.value }))}
+                            required
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Password *</Label>
+                          <Input
+                            type="password"
+                            value={staffForm.password}
+                            onChange={(e) => setStaffForm(prev => ({ ...prev, password: e.target.value }))}
+                            required
+                            minLength={6}
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            At least 6 characters
+                          </p>
+                        </div>
+
+                        <div>
+                          <Label>Role *</Label>
+                          <Select value={staffForm.role} onValueChange={handleRoleChange}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="viewer">Viewer</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="manager">Manager</SelectItem>
+                              <SelectItem value="super_admin">Super Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Roles automatically assign default permissions
+                          </p>
+                        </div>
+
+                        <div>
+                          <Label>Permissions</Label>
+                          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                            {availablePermissions.map((permission) => (
+                              <div key={permission.id} className="flex items-start space-x-2">
+                                <Checkbox
+                                  id={permission.id}
+                                  checked={staffForm.permissions.includes(permission.id)}
+                                  onCheckedChange={() => handlePermissionToggle(permission.id)}
+                                />
+                                <div className="grid gap-1.5 leading-none">
+                                  <Label
+                                    htmlFor={permission.id}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {permission.label}
+                                  </Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    {permission.description}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowCreateForm(false);
+                            setStaffForm({ name: '', email: '', password: '', role: 'staff', permissions: [] });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={saving}>
+                          {saving ? 'Creating...' : 'Create Staff'}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">Staff Management</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add team members, assign roles, and manage permissions. This feature will
-                  allow you to:
-                </p>
-                <ul className="text-sm text-muted-foreground text-left max-w-md mx-auto space-y-1">
-                  <li>• Create staff accounts with custom permissions</li>
-                  <li>• Assign role-based access (Orders, Products, Customers)</li>
-                  <li>• Track staff activity and login history</li>
-                  <li>• Set up approval workflows</li>
-                </ul>
-                <Button variant="outline" className="mt-4" disabled>
-                  Enable Staff Management
-                </Button>
-              </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-sm text-muted-foreground mt-2">Loading staff members...</p>
+                </div>
+              ) : staff.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">No Staff Members</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Get started by adding your first staff member
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Staff Member</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Permissions</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {staff.map((member) => (
+                        <TableRow key={member._id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
+                                  {getInitials(member.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{member.name}</div>
+                                <div className="text-sm text-muted-foreground">{member.email}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              member.role === 'super_admin' ? 'default' :
+                              member.role === 'manager' ? 'secondary' :
+                              member.role === 'staff' ? 'outline' : 'outline'
+                            }>
+                              {member.role === 'super_admin' ? 'Super Admin' :
+                               member.role === 'manager' ? 'Manager' :
+                               member.role === 'staff' ? 'Staff' : 'Viewer'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={member.isActive ? 'default' : 'secondary'}>
+                              {member.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {member.permissions?.slice(0, 2).map((perm: string) => (
+                                <Badge key={perm} variant="outline" className="text-xs">
+                                  {availablePermissions.find(p => p.id === perm)?.label || perm}
+                                </Badge>
+                              ))}
+                              {member.permissions?.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{member.permissions.length - 2} more
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => startEditing(member)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteStaff(member._id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Edit Staff Dialog */}
+          <Dialog open={!!editingStaff} onOpenChange={(open) => !open && cancelEditing()}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Staff Member</DialogTitle>
+                <DialogDescription>
+                  Update staff member information and permissions
+                </DialogDescription>
+              </DialogHeader>
+              {editingStaff && (
+                <form onSubmit={handleUpdateStaff} className="space-y-6">
+                  <div className="grid gap-4">
+                    <div>
+                      <Label>Full Name *</Label>
+                      <Input
+                        value={staffForm.name}
+                        onChange={(e) => setStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Email Address *</Label>
+                      <Input
+                        type="email"
+                        value={staffForm.email}
+                        onChange={(e) => setStaffForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Role *</Label>
+                      <Select value={staffForm.role} onValueChange={handleRoleChange}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                          <SelectItem value="staff">Staff</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Roles automatically assign default permissions
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Permissions</Label>
+                      <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                        {availablePermissions.map((permission) => (
+                          <div key={permission.id} className="flex items-start space-x-2">
+                            <Checkbox
+                              id={`edit-${permission.id}`}
+                              checked={staffForm.permissions.includes(permission.id)}
+                              onCheckedChange={() => handlePermissionToggle(permission.id)}
+                            />
+                            <div className="grid gap-1.5 leading-none">
+                              <Label
+                                htmlFor={`edit-${permission.id}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {permission.label}
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                {permission.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={cancelEditing}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {saving ? 'Updating...' : 'Update Staff'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Security Tab */}

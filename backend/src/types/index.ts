@@ -6,7 +6,8 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: 'customer' | 'admin';
+    role: 'admin' | 'customer' | 'super_admin' | 'manager' | 'staff' | 'viewer';
+    permissions?: string[];
   };
 }
 
@@ -34,7 +35,7 @@ export interface IAdmin extends Document {
   name: string;
   email: string;
   password: string;
-  role: 'admin';
+  role: 'super_admin' | 'manager' | 'staff' | 'viewer';
   permissions: string[];
   isActive: boolean;
   resetPasswordToken?: string;
@@ -61,7 +62,7 @@ export interface IAddress {
 export interface JWTPayload {
   id: string;
   email: string;
-  role: 'customer' | 'admin';
+  role: 'admin' | 'customer' | 'super_admin' | 'manager' | 'staff' | 'viewer';
 }
 
 // Email Options

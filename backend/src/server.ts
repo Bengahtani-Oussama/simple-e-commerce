@@ -18,6 +18,9 @@ import adminOrderRoutes from './routes/adminOrderRoutes';
 import userRoutes from './routes/userRoutes';
 import adminUserRoutes from './routes/adminUserRoutes';
 import couponRoutes from './routes/couponRoutes';
+import staffRoutes from './routes/staffRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
+
 
 // Load environment variables
 dotenv.config();
@@ -64,6 +67,8 @@ app.use('/api/admin/orders', adminOrderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin/customers', adminUserRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/admin/staff', staffRoutes);
+app.use('/api/admin/inventory', inventoryRoutes);
 
 // Error handling
 app.use(notFound);

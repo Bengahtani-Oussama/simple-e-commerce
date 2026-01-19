@@ -25,12 +25,21 @@ const adminSchema = new Schema<IAdmin>(
     },
     role: {
       type: String,
-      default: 'admin',
-      enum: ['admin'],
+      default: 'staff',
+      enum: ['admin', 'super_admin', 'manager', 'staff', 'viewer'],
     },
     permissions: {
       type: [String],
-      default: ['all'], // ['products', 'orders', 'users', etc.] for granular control
+      default: function (this: any) {
+        // Set default permissions based on role
+        const rolePermissions: { [key: string]: string[] } = {
+          super_admin: ['manage_users', 'manage_products', 'manage_orders', 'manage_coupons', 'manage_brands', 'manage_categories', 'view_reports', 'manage_settings'],
+          manager: ['manage_products', 'manage_orders', 'manage_coupons', 'manage_brands', 'manage_categories', 'view_reports'],
+          staff: ['manage_orders', 'view_reports'],
+          viewer: ['view_reports']
+        };
+        return rolePermissions[this.role] || [];
+      },
     },
     isActive: {
       type: Boolean,

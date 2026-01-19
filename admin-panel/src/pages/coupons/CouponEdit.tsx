@@ -10,12 +10,14 @@ import {
   AlertCircle,
   Trash2,
   TrendingUp,
+  Lock,
+  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -25,7 +27,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,17 +107,22 @@ const CouponEdit = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSaving(true);
 
     try {
       const data: any = {
         code: formData.code.toUpperCase(),
-        type: formData.type,
         description: formData.description,
         isActive: formData.isActive,
         usagePerCustomer: formData.usagePerCustomer,
       };
+
+      // Only allow type change if not used
+      if (usage.timesUsed === 0) {
+        data.type = formData.type;
+      }
 
       if (formData.type === 'percentage') {
         data.discountPercentage = formData.discountPercentage;
@@ -170,6 +178,22 @@ const CouponEdit = () => {
     }
   };
 
+  const getCouponTypeIcon = (type: string) => {
+    switch (type) {
+      case 'percentage':
+        return <Percent className="h-8 w-8 text-primary" />;
+      case 'fixed':
+        return <DollarSign className="h-8 w-8 text-primary" />;
+      case 'free_shipping':
+        return <Truck className="h-8 w-8 text-primary" />;
+      default:
+        return null;
+    }
+  };
+
+  // Check if coupon has been used (locked fields)
+  const isUsed = usage.timesUsed > 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -200,18 +224,26 @@ const CouponEdit = () => {
             <h2 className="text-2xl font-bold">Edit Coupon</h2>
             <p className="text-muted-foreground">
               Code: <span className="font-mono font-semibold">{coupon.code}</span>
+              {isUsed && (
+                <Badge variant="secondary" className="ml-2">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Used {usage.timesUsed} times
+                </Badge>
+              )}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
+          {!isUsed && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -226,7 +258,19 @@ const CouponEdit = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Usage Warning */}
+      {isUsed && (
+        <Alert variant="default" className="border-orange-200 bg-orange-50">
+          <Info className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-800">Editing Restrictions</AlertTitle>
+          <AlertDescription className="text-orange-700">
+            This coupon has been used {usage.timesUsed} time(s). The discount type and some
+            core settings cannot be changed. You can deactivate it or adjust usage limits.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Usage Statistics */}
@@ -275,6 +319,9 @@ const CouponEdit = () => {
           <Card>
             <CardHeader>
               <CardTitle>Coupon Code</CardTitle>
+              <CardDescription>
+                {isUsed ? 'Code cannot be changed once used' : 'Update coupon code'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -290,10 +337,14 @@ const CouponEdit = () => {
                   }
                   className="font-mono text-lg mt-2"
                   maxLength={50}
+                  disabled={isUsed}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  3-50 characters, letters and numbers only
-                </p>
+                {isUsed && (
+                  <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Locked - coupon has been used
+                  </p>
+                )}
               </div>
 
               <div>
@@ -318,6 +369,11 @@ const CouponEdit = () => {
           <Card>
             <CardHeader>
               <CardTitle>Discount Settings</CardTitle>
+              <CardDescription>
+                {isUsed
+                  ? 'Discount type is locked after first use'
+                  : 'Configure discount type and value'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -327,6 +383,7 @@ const CouponEdit = () => {
                   onValueChange={(value: any) =>
                     setFormData((prev) => ({ ...prev, type: value }))
                   }
+                  disabled={isUsed}
                 >
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -352,6 +409,12 @@ const CouponEdit = () => {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {isUsed && (
+                  <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Type locked - cannot change after use
+                  </p>
+                )}
               </div>
 
               {formData.type === 'percentage' && (
@@ -371,9 +434,16 @@ const CouponEdit = () => {
                             discountPercentage: Number(e.target.value),
                           }))
                         }
+                        disabled={isUsed}
                       />
                       <span className="text-2xl font-bold text-muted-foreground">%</span>
                     </div>
+                    {isUsed && (
+                      <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                        <Lock className="h-3 w-3" />
+                        Percentage locked after use
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -409,8 +479,25 @@ const CouponEdit = () => {
                       }))
                     }
                     className="mt-2"
+                    disabled={isUsed}
                   />
+                  {isUsed && (
+                    <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      Amount locked after use
+                    </p>
+                  )}
                 </div>
+              )}
+
+              {formData.type === 'free_shipping' && (
+                <Alert>
+                  <Truck className="h-4 w-4" />
+                  <AlertTitle>Free Shipping Coupon</AlertTitle>
+                  <AlertDescription>
+                    This coupon removes the shipping cost from orders.
+                  </AlertDescription>
+                </Alert>
               )}
 
               <Separator />
@@ -520,7 +607,7 @@ const CouponEdit = () => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     {new Date(formData.endDate) > new Date(formData.startDate) ? (
-                      <span className="text-green-600">✓ End date is after start date</span>
+                      <span className="text-green-600">✓ Valid date range</span>
                     ) : (
                       <span className="text-red-600">✗ End date must be after start date</span>
                     )}
@@ -531,9 +618,9 @@ const CouponEdit = () => {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - Preview & Status */}
         <div className="space-y-6">
-          {/* Preview */}
+          {/* Coupon Preview */}
           <Card className="sticky top-4">
             <CardHeader>
               <CardTitle>Coupon Preview</CardTitle>
@@ -541,15 +628,7 @@ const CouponEdit = () => {
             <CardContent>
               <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center space-y-4">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                  {formData.type === 'percentage' && (
-                    <Percent className="h-8 w-8 text-primary" />
-                  )}
-                  {formData.type === 'fixed' && (
-                    <DollarSign className="h-8 w-8 text-primary" />
-                  )}
-                  {formData.type === 'free_shipping' && (
-                    <Truck className="h-8 w-8 text-primary" />
-                  )}
+                  {getCouponTypeIcon(formData.type)}
                 </div>
 
                 <div>
@@ -604,7 +683,9 @@ const CouponEdit = () => {
                 <div>
                   <Label>Active Status</Label>
                   <p className="text-sm text-muted-foreground">
-                    Coupon can be used by customers
+                    {isUsed
+                      ? 'Deactivate to prevent further use'
+                      : 'Coupon can be used by customers'}
                   </p>
                 </div>
                 <Switch
@@ -616,23 +697,35 @@ const CouponEdit = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
 
-      {/* Delete Dialog */}
+          {/* Deletion Warning */}
+          {isUsed && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="text-sm text-orange-800 flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Deletion Restricted
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-orange-700">
+                <p>
+                  This coupon cannot be deleted because it has been used {usage.timesUsed}{' '}
+                  time(s). You can deactivate it instead to prevent further use.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </form>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Coupon?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete coupon "{coupon.code}"? This action cannot be
-              undone.
-              {usage.timesUsed > 0 && (
-                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
-                  <strong>Warning:</strong> This coupon has been used {usage.timesUsed}{' '}
-                  time(s). Deletion may not be possible.
-                </div>
-              )}
+              Are you sure you want to permanently delete coupon "{coupon.code}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -641,7 +734,7 @@ const CouponEdit = () => {
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
