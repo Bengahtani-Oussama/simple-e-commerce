@@ -14,6 +14,8 @@ const CategoryList = lazy(() => import('./pages/categories/CategoryList'));
 const BrandList = lazy(() => import('./pages/brands/BrandList'));
 const OrderList = lazy(() => import('./pages/orders/OrderList'));
 const CouponList = lazy(() => import('./pages/coupons/CouponList'));
+const CouponCreate = lazy(() => import('./pages/coupons/CouponCreate'));
+const CouponEdit = lazy(() => import('./pages/coupons/CouponEdit'));
 const OrderDetail = lazy(() => import('./pages/orders/OrderDetail'));
 const CustomerList = lazy(() => import('./pages/customers/CustomerList'));
 const CustomerDetail = lazy(() => import('./pages/customers/CustomerDetail'));
@@ -124,6 +126,8 @@ function App() {
             {/* Coupons */}
             <Route path="coupons">
               <Route index element={<CouponList />} />
+              <Route path="create" element={<CouponCreate />} />
+              <Route path="edit/:id" element={<CouponEdit />} />
             </Route>
 
             {/* Customers */}
