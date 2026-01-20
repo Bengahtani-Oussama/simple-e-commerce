@@ -2,8 +2,10 @@ import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import { specs } from './config/swagger';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -45,12 +47,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(specs, {
+  swaggerOptions: {
+    url: '/api-docs/swagger.json',
+    persistAuthorization: true,
+  }
+}));
+
 // Routes
 app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Algeria E-Commerce API',
     version: '1.0.0',
+    documentation: 'http://localhost:5000/api-docs'
   });
 });
 
