@@ -21,6 +21,7 @@
 - [ ] Verify error handling and loading states work correctly
 - [ ] Check that all translations are available in i18n files
 - [ ] Test cancel order functionality
+- [x] Test coupon application functionality
 - [ ] Ensure proper mobile responsiveness
 - [ ] Add any missing UI components if needed
 

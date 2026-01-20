@@ -3,6 +3,7 @@
     "search": "Search...",
     "loading": "Loading...",
     "error": "An error occurred",
+    "success": "Success",
     "tryAgain": "Try again",
     "save": "Save",
     "cancel": "Cancel",
@@ -105,7 +106,14 @@
     "orderSummary": "Order Summary",
     "placeOrder": "Place Order",
     "customerNote": "Notes (Optional)",
-    "required": "Required"
+    "required": "Required",
+    "couponCode": "Coupon Code",
+    "enterCoupon": "Enter coupon code",
+    "applyCoupon": "Apply",
+    "removeCoupon": "Remove",
+    "couponApplied": "Coupon applied successfully",
+    "invalidCoupon": "Invalid coupon code",
+    "couponDiscount": "Coupon Discount"
   },
   "account": {
     "title": "My Account",

@@ -12,6 +12,26 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
   try {
     const { shippingAddressId, shippingMethod, shippingCost, customerNote, couponDiscount } = req.body;
 
+    // Validate and parse numeric values
+    const shippingCostNum = Number(shippingCost);
+    const couponDiscountNum = couponDiscount ? Number(couponDiscount) : 0;
+
+    if (isNaN(shippingCostNum)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid shipping cost',
+      });
+      return;
+    }
+
+    if (isNaN(couponDiscountNum)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid coupon discount',
+      });
+      return;
+    }
+
     // Get user cart
     const cart = await Cart.findOne({ user: req.user?.id });
     if (!cart || cart.items.length === 0) {
@@ -69,7 +89,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
 
     // Calculate total
     const subtotal = cart.subtotal;
-    const total = subtotal + shippingCost - couponDiscount
+    const total = subtotal + shippingCostNum - couponDiscountNum
     // const total = subtotal + shippingCost;
 
     // Convert cart items to plain objects
@@ -91,7 +111,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       user: req.user?.id,
       items: orderItems,
       subtotal,
-      shippingCost,
+      shippingCost: shippingCostNum,
       total,
       orderNumber: Date.now().toString(),
       shippingAddress: {
@@ -104,6 +124,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       },
       shippingMethod,
       customerNote,
+      couponDiscount: couponDiscountNum,
     });
 
     // Reduce stock for each variant
@@ -205,6 +226,135 @@ export const getOrder = async (req: AuthRequest, res: Response): Promise<void> =
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to get order',
+    });
+  }
+};
+
+// @desc    Apply coupon to order
+// @route   PUT /api/orders/:id/apply-coupon
+export const applyCouponToOrder = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { couponCode } = req.body;
+
+    if (!couponCode) {
+      res.status(400).json({
+        success: false,
+        message: 'Coupon code is required',
+      });
+      return;
+    }
+
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!order) {
+      res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+      return;
+    }
+
+    // Only allow coupon application if order is pending
+    if (order.orderStatus !== 'pending') {
+      res.status(400).json({
+        success: false,
+        message: 'Coupon can only be applied to pending orders',
+      });
+      return;
+    }
+
+    // Check if coupon is already applied
+    if (order.coupon) {
+      res.status(400).json({
+        success: false,
+        message: 'A coupon is already applied to this order',
+      });
+      return;
+    }
+
+    // Import Coupon model here to avoid circular dependency
+    const Coupon = (await import('../models/Coupon')).default;
+
+    // Find and validate coupon
+    const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+
+    if (!coupon) {
+      res.status(404).json({
+        success: false,
+        message: 'Invalid coupon code',
+      });
+      return;
+    }
+
+    // Check customer usage count
+    const customerUsageCount = await Order.countDocuments({
+      user: req.user.id,
+      'coupon.code': coupon.code,
+    });
+
+    // Validate coupon
+    const validation = coupon.validateForOrder(
+      order.subtotal,
+      req.user.id,
+      customerUsageCount
+    );
+
+    if (!validation.valid) {
+      res.status(400).json({
+        success: false,
+        message: validation.reason,
+      });
+      return;
+    }
+
+    // Calculate discount
+    const { discount, freeShipping } = coupon.calculateDiscount(
+      order.subtotal,
+      order.shippingCost
+    );
+
+    // Apply coupon to order
+    order.coupon = {
+      code: coupon.code,
+      type: coupon.type,
+      discount,
+      freeShipping,
+    };
+    order.couponDiscount = discount;
+    order.total = order.subtotal + order.shippingCost - discount;
+
+    // Handle free shipping
+    if (freeShipping) {
+      order.total = order.subtotal - discount;
+      order.shippingCost = 0;
+    }
+
+    await order.save();
+
+    // Increment coupon usage count
+    coupon.usedCount += 1;
+    await coupon.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Coupon applied successfully',
+      data: order,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to apply coupon',
     });
   }
 };

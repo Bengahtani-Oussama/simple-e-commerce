@@ -35,6 +35,10 @@ export default function CheckoutPage() {
   const [customerNote, setCustomerNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -63,6 +67,52 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: t('common.error'),
+        description: t('validation.required'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!cart) return;
+
+    setCouponLoading(true);
+    try {
+      const response = await api.post('/coupons/validate', {
+        code: couponCode.trim(),
+        orderSubtotal: cart.subtotal,
+        shippingCost,
+        userId: user?._id,
+      });
+
+      const couponData = response.data.data;
+      setAppliedCoupon(couponData);
+      setCouponDiscount(couponData.discount);
+
+      toast({
+        title: t('common.success'),
+        description: t('checkout.couponApplied'),
+      });
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: handleApiError(error),
+        variant: 'destructive',
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode('');
+  };
+
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       toast({
@@ -80,6 +130,7 @@ export default function CheckoutPage() {
         shippingMethod,
         shippingCost,
         customerNote,
+        couponDiscount: couponDiscount || undefined,
       });
 
       const order = response.data.data;
@@ -104,7 +155,7 @@ export default function CheckoutPage() {
 
   if (!cart) return null;
 
-  const total = cart.subtotal + shippingCost;
+  const total = cart.subtotal + shippingCost - couponDiscount;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -210,6 +261,51 @@ export default function CheckoutPage() {
               />
             </CardContent>
           </Card>
+
+          {/* Coupon Code */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('checkout.couponCode')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appliedCoupon ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div>
+                      <p className="font-medium text-green-800">{appliedCoupon.code}</p>
+                      <p className="text-sm text-green-600">
+                        {t('checkout.couponDiscount')}: {formatPrice(couponDiscount, locale)}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      {t('checkout.removeCoupon')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t('checkout.enterCoupon')}
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    variant="outline"
+                  >
+                    {couponLoading ? t('common.loading') : t('checkout.applyCoupon')}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Order Summary */}
@@ -258,6 +354,12 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground">{t('cart.shipping')}</span>
                 <span className="font-medium">{formatPrice(shippingCost, locale)}</span>
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>{t('checkout.couponDiscount')}</span>
+                  <span className="font-medium">-{formatPrice(couponDiscount, locale)}</span>
+                </div>
+              )}
             </div>
 
             <Separator />

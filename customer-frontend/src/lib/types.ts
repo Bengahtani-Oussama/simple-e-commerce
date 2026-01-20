@@ -133,6 +133,13 @@ export interface Order {
   adminNote?: string;
   hasReturn: boolean;
   returnTotal: number;
+  coupon?: {
+    code: string;
+    type: 'percentage' | 'fixed' | 'free_shipping';
+    discount: number;
+    freeShipping: boolean;
+  };
+  couponDiscount: number;
   createdAt: string;
   updatedAt: string;
 }

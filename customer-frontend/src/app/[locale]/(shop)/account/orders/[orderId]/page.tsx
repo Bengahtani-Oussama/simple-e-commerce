@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -27,6 +28,8 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const orderId = params.orderId as string;
 
@@ -76,6 +79,32 @@ export default function OrderDetailsPage() {
       });
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!order || !couponCode.trim()) return;
+
+    setApplyingCoupon(true);
+    try {
+      const response = await api.put(`/orders/${order._id}/apply-coupon`, {
+        couponCode: couponCode.trim(),
+      });
+      setOrder(response.data.data);
+      setCouponCode('');
+      toast({
+        title: t('common.success'),
+        description: t('orders.couponApplied'),
+      });
+    } catch (error: any) {
+      console.error('Failed to apply coupon:', error);
+      toast({
+        title: t('common.error'),
+        description: error.response?.data?.message || t('orders.couponApplyError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setApplyingCoupon(false);
     }
   };
 
@@ -338,6 +367,12 @@ export default function OrderDetailsPage() {
                 <span>{t('orders.subtotal')}</span>
                 <span>{formatPrice(order.subtotal, locale)}</span>
               </div>
+              {order.coupon && (
+                <div className="flex justify-between text-green-600">
+                  <span>{t('orders.couponDiscount')} ({order.coupon.code})</span>
+                  <span>-{formatPrice(order.couponDiscount, locale)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>{t('orders.shipping')}</span>
                 <span>{formatPrice(order.shippingCost, locale)}</span>
@@ -347,6 +382,25 @@ export default function OrderDetailsPage() {
                 <span>{t('orders.total')}</span>
                 <span>{formatPrice(order.total, locale)}</span>
               </div>
+              {order.orderStatus === 'pending' && !order.coupon && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t('orders.couponCode')}
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      disabled={applyingCoupon || !couponCode.trim()}
+                      size="sm"
+                    >
+                      {applyingCoupon ? t('common.loading') : t('orders.applyCoupon')}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

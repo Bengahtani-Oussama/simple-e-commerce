@@ -3,6 +3,7 @@
     "search": "Rechercher...",
     "loading": "Chargement...",
     "error": "Une erreur s'est produite",
+    "success": "Succès",
     "tryAgain": "Réessayer",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -105,7 +106,14 @@
     "orderSummary": "Résumé de la Commande",
     "placeOrder": "Passer la Commande",
     "customerNote": "Notes (Optionnel)",
-    "required": "Requis"
+    "required": "Requis",
+    "couponCode": "Code Promo",
+    "enterCoupon": "Entrez le code promo",
+    "applyCoupon": "Appliquer",
+    "removeCoupon": "Retirer",
+    "couponApplied": "Code promo appliqué avec succès",
+    "invalidCoupon": "Code promo invalide",
+    "couponDiscount": "Remise Promo"
   },
   "account": {
     "title": "Mon Compte",

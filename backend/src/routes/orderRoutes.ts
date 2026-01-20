@@ -4,6 +4,7 @@ import {
   getUserOrders,
   getOrder,
   cancelOrder,
+  applyCouponToOrder,
 } from '../controllers/orderController';
 import { protect, isCustomer } from '../middleware/authMiddleware';
 
@@ -16,5 +17,6 @@ router.post('/', createOrder);
 router.get('/', getUserOrders);
 router.get('/:id', getOrder);
 router.put('/:id/cancel', cancelOrder);
+router.put('/:id/apply-coupon', applyCouponToOrder);
 
 export default router;
