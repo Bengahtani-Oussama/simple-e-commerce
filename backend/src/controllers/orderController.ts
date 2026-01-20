@@ -291,13 +291,13 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
     },
   };
 
-  const t = content["en"];
-  // const t = content[lang];
+  // const t = content["en"];
+  const t = content[lang];
 
-  // <html lang="${lang}">
+  // <html lang="${"en"}">
   return `
-    <!DOCTYPE html>
-    <html lang="${"en"}">
+  <!DOCTYPE html>
+   <html lang="${lang}">
     <head>
       <meta charset="UTF-8">
       <style>
