@@ -11,6 +11,8 @@ const ProductList = lazy(() => import('./pages/products/ProductList'));
 const ProductCreate = lazy(() => import('./pages/products/ProductCreate'));
 const ProductEdit = lazy(() => import('./pages/products/ProductEdit'));
 const InventoryList = lazy(() => import('./pages/inventory/InventoryOverview'));
+const InventoryAdjustment = lazy(() => import('./pages/inventory/StockAdjustment'));
+const InventoryHistory = lazy(() => import('./pages/inventory/StockHistory'));
 const CategoryList = lazy(() => import('./pages/categories/CategoryList'));
 const BrandList = lazy(() => import('./pages/brands/BrandList'));
 const OrderList = lazy(() => import('./pages/orders/OrderList'));
@@ -111,6 +113,8 @@ function App() {
             {/* Inventory */}
             <Route path="inventory">
               <Route index element={<InventoryList />} />
+              <Route path="adjust/:productId/:variantId" element={<InventoryAdjustment />} />
+              <Route path="history/:productId/:variantId" element={<InventoryHistory />} />
             </Route>
 
             {/* Categories */}
