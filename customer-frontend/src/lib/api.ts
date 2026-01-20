@@ -47,7 +47,7 @@ api.interceptors.response.use(
         // Refresh failed, redirect to login
         Cookies.remove('accessToken');
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = '/en/login';
         }
         return Promise.reject(refreshError);
       }
