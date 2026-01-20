@@ -132,17 +132,12 @@ const seedBrands = async () => {
 
   const brands = await Promise.all(
     arabicBrands.map((brand) => {
-      const name = typeof brand === 'string' ? brand : brand.en;
-      const ar = typeof brand === 'string' ? brand : (brand.ar || brand.en);
       const en = typeof brand === 'string' ? brand : brand.en;
+      const ar = typeof brand === 'string' ? brand : (brand.ar || brand.en);
       const fr = typeof brand === 'string' ? brand : (brand.fr || brand.en);
       
       return Brand.create({
-        name: {
-          ar,
-          en,
-          fr,
-        },
+        name: en,
         slug: generateUniqueSlug(en),
         description: {
           ar: `وصف ماركة ${ar}`,
@@ -413,11 +408,15 @@ const seedOrders = async (users: any[], products: any[]) => {
       };
     });
 
-    const shippingCost = ['Algiers', 'Constantine'].includes(user.addresses[0]?.wilaya)
+    const shippingCost = ['الجزائر', 'قسنطينة'].includes(user.addresses[0]?.wilaya)
       ? 500
       : 1000;
 
+    // Generate unique order number
+    const orderNumber = `ORD-${Date.now()}-${i}`;
+
     const order = await Order.create({
+      orderNumber,
       user: user._id,
       items,
       subtotal,
@@ -432,9 +431,9 @@ const seedOrders = async (users: any[], products: any[]) => {
       },
       shippingMethod: Math.random() > 0.5 ? 'home_delivery' : 'office_pickup',
       paymentStatus: Math.random() > 0.3 ? 'paid' : 'pending',
-      paymentMethod: Math.random() > 0.5 ? 'card' : 'cash_on_delivery',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      notes: 'Please deliver carefully',
+      paymentMethod: 'cash_on_delivery',
+      orderStatus: statuses[Math.floor(Math.random() * statuses.length)],
+      customerNote: 'Please deliver carefully',
     });
 
     orders.push(order);
