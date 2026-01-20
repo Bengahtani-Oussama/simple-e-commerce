@@ -1,5 +1,5 @@
 {
-  "name": "ecommerce-algeria-backend",
+  "name": "backend",
   "version": "1.0.0",
   "description": "Backend API for Algeria E-Commerce platform",
   "main": "dist/server.js",
