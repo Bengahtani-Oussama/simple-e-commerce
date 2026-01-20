@@ -276,7 +276,6 @@ const CategoryList = () => {
                           {/* Name */}
                           <TableCell>
                             <div className="font-medium flex items-center gap-2">
-                              <FolderTree className="h-4 w-4 text-primary" />
                               {category.name.en}
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -355,9 +354,6 @@ const CategoryList = () => {
 
                               <TableCell>
                                 <div className="font-medium ml-6 flex items-center gap-2">
-                                  <span className="text-muted-foreground">
-                                    └─
-                                  </span>
                                   {subcategory.name.en}
                                 </div>
                                 <div className="text-xs text-muted-foreground ml-6">

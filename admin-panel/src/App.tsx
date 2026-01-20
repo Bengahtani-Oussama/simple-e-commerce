@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const ProductList = lazy(() => import('./pages/products/ProductList'));
 const ProductCreate = lazy(() => import('./pages/products/ProductCreate'));
 const ProductEdit = lazy(() => import('./pages/products/ProductEdit'));
+const InventoryList = lazy(() => import('./pages/inventory/InventoryOverview'));
 const CategoryList = lazy(() => import('./pages/categories/CategoryList'));
 const BrandList = lazy(() => import('./pages/brands/BrandList'));
 const OrderList = lazy(() => import('./pages/orders/OrderList'));
@@ -105,6 +106,11 @@ function App() {
               <Route index element={<ProductList />} />
               <Route path="create" element={<ProductCreate />} />
               <Route path="edit/:id" element={<ProductEdit />} />
+            </Route>
+
+            {/* Inventory */}
+            <Route path="inventory">
+              <Route index element={<InventoryList />} />
             </Route>
 
             {/* Categories */}

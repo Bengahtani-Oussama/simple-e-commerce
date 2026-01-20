@@ -13,6 +13,8 @@ import {
   LogOut,
   ChevronDown,
   Ticket,
+  Blocks,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -61,6 +63,11 @@ const DashboardLayout = () => {
       name: "Products",
       href: "/products",
       icon: Package,
+    },
+    {
+      name: "Inventory",
+      href: "/inventory",
+      icon: Blocks,
     },
     {
       name: "Categories",
@@ -169,21 +176,21 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
+        <header className="relative flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6 z-10">
           {/* Mobile Menu */}
 
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="hidden lg:inline-flex"
+            className="w-6 h-6 hidden lg:inline-flex absolute -left-3 top-1/2 -translate-y-1/2 z-20 rounded-full"
             onClick={() => setSidebarCollapsed((prev) => !prev)}
           >
             {sidebarCollapsed ? (
-              <Menu className="h-5 w-5" />
+              <ArrowRight className="h-5 w-5" />
             ) : (
-              <X className="h-5 w-5" />
+              <ArrowRight className="h-5 w-5 scale-x-[-1]" />
             )}
           </Button>
 
