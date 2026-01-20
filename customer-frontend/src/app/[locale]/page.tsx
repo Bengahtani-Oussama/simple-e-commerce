@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/home/HeroSection";

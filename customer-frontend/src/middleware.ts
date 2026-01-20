@@ -1,5 +1,5 @@
 import createMiddleware from 'next-intl/middleware';
-import { locales } from './i18n';
+import { locales } from './i18n/request';
 
 export default createMiddleware({
   // A list of all locales that are supported
@@ -9,10 +9,11 @@ export default createMiddleware({
   defaultLocale: 'ar',
 
   // Always use a locale prefix
-  localePrefix: 'always',
+  // localePrefix: 'always',
 });
 
 export const config = {
   // Match only internationalized pathnames
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/', '/(en|ar|fr)/:path*'],
 };
