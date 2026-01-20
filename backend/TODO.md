@@ -1,4 +1,14 @@
 # API Documentation Creation TODO
+Admin:
+{
+    email: "admin@example.com"
+    password: "123456789"
+}
+Customer:
+{
+    email: "oussamabengahtani@gmail.com"
+    password: "123456789"
+}
 
 ## Tasks to Complete
 - [ ] Create Postman collection JSON file with all 86 endpoints
