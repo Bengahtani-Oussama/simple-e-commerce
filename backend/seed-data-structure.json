@@ -1,0 +1,271 @@
+{
+  "generatedAt": "2026-01-20T00:00:00Z",
+  "seedDataStructure": {
+    "admins": {
+      "count": 1,
+      "example": {
+        "name": "Super Admin",
+        "email": "admin@example.com",
+        "password": "admin123456",
+        "role": "super_admin",
+        "permissions": [
+          "manage_users",
+          "manage_products",
+          "manage_orders",
+          "manage_coupons",
+          "manage_brands",
+          "manage_categories",
+          "view_reports",
+          "manage_settings"
+        ]
+      }
+    },
+    "categories": {
+      "count": 5,
+      "example": {
+        "name": {
+          "ar": "الملابس والأزياء",
+          "en": "Clothing & Fashion",
+          "fr": "Vêtements & Mode"
+        },
+        "slug": "clothing-fashion-1705734000000",
+        "description": {
+          "ar": "وصف فئة الملابس والأزياء",
+          "en": "Description of Clothing & Fashion",
+          "fr": "Description de Vêtements & Mode"
+        },
+        "isActive": true,
+        "order": 0
+      }
+    },
+    "brands": {
+      "count": 5,
+      "example": {
+        "name": {
+          "ar": "نايك",
+          "en": "Nike",
+          "fr": "Nike"
+        },
+        "slug": "nike-1705734000000",
+        "description": {
+          "ar": "وصف ماركة نايك",
+          "en": "Description of Nike",
+          "fr": "Description de Nike"
+        },
+        "isActive": true
+      }
+    },
+    "products": {
+      "count": 10,
+      "example": {
+        "name": {
+          "ar": "حذاء رياضي أسود",
+          "en": "Black Sports Shoe",
+          "fr": "Chaussure de Sport Noire"
+        },
+        "slug": "black-sports-shoe-1705734000000",
+        "description": {
+          "ar": "وصف المنتج: حذاء رياضي أسود - منتج عالي الجودة",
+          "en": "High-quality Black Sports Shoe with excellent features",
+          "fr": "Produit de haute qualité Chaussure de Sport Noire"
+        },
+        "category": "ObjectId(category_id)",
+        "brand": "ObjectId(brand_id)",
+        "basePrice": 2000,
+        "compareAtPrice": 2500,
+        "stock": 50,
+        "rating": 4.5,
+        "variants": [
+          {
+            "sku": "SKU-0-001",
+            "color": "Black",
+            "size": "M",
+            "price": 2000,
+            "stock": 30,
+            "images": ["https://via.placeholder.com/400?text=Product+1"],
+            "isActive": true
+          },
+          {
+            "sku": "SKU-0-002",
+            "color": "White",
+            "size": "L",
+            "price": 2100,
+            "stock": 20,
+            "images": ["https://via.placeholder.com/400?text=Product+2"],
+            "isActive": true
+          }
+        ],
+        "images": ["https://via.placeholder.com/400?text=Product+Main"],
+        "isActive": true
+      }
+    },
+    "users": {
+      "count": 5,
+      "example": {
+        "firstName": "أحمد",
+        "lastName": "محمد",
+        "email": "ahmed@example.com",
+        "phone": "+213661234567",
+        "addresses": [
+          {
+            "fullName": "أحمد محمد",
+            "phone": "+213661234567",
+            "wilaya": "الجزائر",
+            "commune": "الجزائر الوسطى",
+            "addressLine": "شارع الثورة، رقم 123",
+            "postalCode": "16000",
+            "isDefault": true
+          }
+        ],
+        "role": "customer",
+        "isVerified": true,
+        "isActive": true
+      }
+    },
+    "coupons": {
+      "count": 4,
+      "examples": [
+        {
+          "code": "SUMMER2024",
+          "type": "percentage",
+          "discountPercentage": 20,
+          "minOrderValue": 5000,
+          "usageLimit": 100,
+          "usagePerCustomer": 2,
+          "startDate": "2026-01-20T00:00:00Z",
+          "endDate": "2026-02-19T00:00:00Z",
+          "isActive": true,
+          "description": "خصم 20% لفصل الصيف"
+        },
+        {
+          "code": "WELCOME500",
+          "type": "fixed",
+          "discountAmount": 500,
+          "minOrderValue": 3000,
+          "usageLimit": 500,
+          "usagePerCustomer": 1,
+          "startDate": "2026-01-20T00:00:00Z",
+          "endDate": "2026-03-20T00:00:00Z",
+          "isActive": true,
+          "description": "خصم ثابت 500 دج للعملاء الجدد"
+        },
+        {
+          "code": "FREESHIP",
+          "type": "free_shipping",
+          "minOrderValue": 10000,
+          "usageLimit": 200,
+          "usagePerCustomer": 3,
+          "isActive": true,
+          "description": "شحن مجاني على جميع الطلبات"
+        },
+        {
+          "code": "VIPDAY",
+          "type": "percentage",
+          "discountPercentage": 30,
+          "minOrderValue": 15000,
+          "maxDiscount": 5000,
+          "usageLimit": 50,
+          "usagePerCustomer": 1,
+          "isActive": true,
+          "description": "عرض VIP خاص - خصم 30%"
+        }
+      ]
+    },
+    "orders": {
+      "count": 15,
+      "example": {
+        "orderNumber": "AUTO-GENERATED",
+        "user": "ObjectId(user_id)",
+        "items": [
+          {
+            "product": "ObjectId(product_id)",
+            "variant": "ObjectId(variant_id)",
+            "sku": "SKU-0-001",
+            "name": {
+              "ar": "حذاء رياضي أسود",
+              "en": "Black Sports Shoe",
+              "fr": "Chaussure de Sport Noire"
+            },
+            "variantDetails": {
+              "size": "M",
+              "color": "Black"
+            },
+            "price": 2000,
+            "quantity": 2,
+            "image": "https://via.placeholder.com/400?text=Product"
+          }
+        ],
+        "subtotal": 4000,
+        "shippingCost": 500,
+        "total": 4500,
+        "shippingAddress": {
+          "fullName": "أحمد محمد",
+          "phone": "+213661234567",
+          "wilaya": "الجزائر",
+          "commune": "الجزائر الوسطى",
+          "addressLine": "شارع الثورة، رقم 123"
+        },
+        "shippingMethod": "home_delivery",
+        "paymentStatus": "paid",
+        "paymentMethod": "card",
+        "status": "delivered",
+        "notes": "Please deliver carefully",
+        "createdAt": "2026-01-15T10:30:00Z",
+        "updatedAt": "2026-01-20T14:00:00Z"
+      }
+    },
+    "statistics": {
+      "totalRecords": 420,
+      "breakdown": {
+        "admins": 1,
+        "users": 5,
+        "categories": 5,
+        "brands": 5,
+        "products": 10,
+        "variants": 20,
+        "coupons": 4,
+        "orders": 15,
+        "orderItems": "~45"
+      }
+    },
+    "credentials": {
+      "admin": {
+        "email": "admin@example.com",
+        "password": "admin123456",
+        "note": "⚠️ Change immediately after first login"
+      },
+      "testUsers": {
+        "emails": [
+          "ahmed@example.com",
+          "fatima@example.com",
+          "mahmoud@example.com",
+          "leila@example.com",
+          "omar@example.com"
+        ],
+        "password": "user123456",
+        "note": "All test users use the same password for simplicity"
+      }
+    },
+    "testCoupons": {
+      "SUMMER2024": "20% discount (min: 5000 DA)",
+      "WELCOME500": "500 DA fixed discount (min: 3000 DA)",
+      "FREESHIP": "Free shipping (min: 10000 DA)",
+      "VIPDAY": "30% VIP discount (min: 15000 DA)"
+    },
+    "notes": {
+      "1": "All prices are in DZD (Algerian Dinar)",
+      "2": "All product names and descriptions are trilingual (AR, EN, FR)",
+      "3": "Images are placeholder URLs - replace with real images in production",
+      "4": "Order statuses: pending, confirmed, shipped, delivered, cancelled",
+      "5": "This is test data and should not be used in production",
+      "6": "The script is safe to run multiple times (idempotent)"
+    },
+    "usageInstructions": {
+      "1": "cd backend",
+      "2": "npm install",
+      "3": "npm run seed:all",
+      "4": "Wait for completion message",
+      "5": "Start testing!"
+    }
+  }
+}

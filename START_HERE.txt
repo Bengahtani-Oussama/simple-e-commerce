@@ -1,0 +1,24 @@
+⚡ البدء الفوري - جداً سهل! 
+
+📝 انسخ والصق هذه الأوامر:
+
+```bash
+cd backend
+npm install
+npm run seed:all
+```
+
+✅ انتهى! البيانات جاهزة الآن.
+
+---
+
+🔐 بيانات الدخول:
+- Admin: admin@example.com / admin123456
+- User: ahmed@example.com / user123456
+
+---
+
+📚 للمزيد:
+- QUICK_START.md - بدء سريع
+- SEED_DATABASE_GUIDE.md - دليل كامل
+- SOLUTION_SUMMARY.md - ملخص شامل
