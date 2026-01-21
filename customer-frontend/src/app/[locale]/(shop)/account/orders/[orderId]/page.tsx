@@ -26,6 +26,7 @@ export default function OrderDetailsPage() {
   const params = useParams();
   const { isAuthenticated } = useAuthStore();
   const [order, setOrder] = useState<Order | null>(null);
+  console.log('order', order);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -370,7 +371,7 @@ export default function OrderDetailsPage() {
               {order.coupon && (
                 <div className="flex justify-between text-green-600">
                   <span>{t('orders.couponDiscount')} ({order.coupon.code})</span>
-                  <span>-{formatPrice(order.couponDiscount, locale)}</span>
+                  <span>-{formatPrice(order.coupon.discount, locale)}</span>
                 </div>
               )}
               <div className="flex justify-between">

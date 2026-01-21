@@ -41,8 +41,7 @@ const Dashboard = () => {
     try {
       // In a real app, you'd have a dedicated stats endpoint
       // For now, we'll fetch basic data
-      // const [ordersRes, productsRes, customersRes] = await Promise.all([
-      const [ordersRes, productsRes ] = await Promise.all([
+      const [ordersRes, productsRes, customersRes] = await Promise.all([
         api.get('/admin/orders?limit=5'),
         api.get('/products?limit=1'),
         api.get('/admin/customers?limit=1'),
@@ -54,8 +53,7 @@ const Dashboard = () => {
           0
         ),
         totalOrders: ordersRes.data.total || 0,
-        totalCustomers:  0,
-        // totalCustomers: customersRes.data.total || 0,
+        totalCustomers: customersRes.data.total || 0,
         totalProducts: productsRes.data.total || 0,
         pendingOrders: ordersRes.data.stats?.pendingOrders || 0,
         lowStockProducts: 0,

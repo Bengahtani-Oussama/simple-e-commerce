@@ -399,6 +399,14 @@ const OrderDetail = () => {
                   {formatPrice(order.subtotal)}
                 </span>
               </div>
+
+               {order.coupon && (
+                <div className="flex justify-between text-green-600">
+                  <span>{('Coupon Discount')} ({order.coupon.code})</span>
+                  <span>-{formatPrice(order.coupon.discount)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
                 <span className="font-medium">

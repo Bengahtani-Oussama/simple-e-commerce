@@ -69,7 +69,7 @@ const seedAdmins = async () => {
   const admin = await Admin.create({
     name: 'Super Admin',
     email: 'admin@example.com',
-    password: 'admin123456',
+    password: '123456789',
     role: 'super_admin',
     permissions: [
       'manage_users',
@@ -187,7 +187,7 @@ const seedProducts = async (categories: any[], brands: any[]) => {
             price: 2000 + index * 500,
             stock: 30 + index * 5,
             images: [
-              'https://via.placeholder.com/400?text=Product+1',
+              'https://placehold.co/400x600?text=Product+1',
             ],
             isActive: true,
           },
@@ -198,13 +198,13 @@ const seedProducts = async (categories: any[], brands: any[]) => {
             price: 2100 + index * 500,
             stock: 20 + index * 5,
             images: [
-              'https://via.placeholder.com/400?text=Product+2',
+              'https://placehold.co/400x600?text=Product+2',
             ],
             isActive: true,
           },
         ],
         images: [
-          'https://via.placeholder.com/400?text=Product+Main',
+          'https://placehold.co/400x600?text=Product+Main',
         ],
         isActive: true,
       })
@@ -231,35 +231,35 @@ const seedUsers = async () => {
       lastName: 'محمد',
       email: 'ahmed@example.com',
       phone: '+213661234567',
-      password: 'user123456',
+      password: '123456789',
     },
     {
       firstName: 'فاطمة',
       lastName: 'علي',
       email: 'fatima@example.com',
       phone: '+213661234568',
-      password: 'user123456',
+      password: '123456789',
     },
     {
       firstName: 'محمود',
       lastName: 'خالد',
       email: 'mahmoud@example.com',
       phone: '+213661234569',
-      password: 'user123456',
+      password: '123456789',
     },
     {
       firstName: 'ليلى',
       lastName: 'حسن',
       email: 'leila@example.com',
       phone: '+213661234570',
-      password: 'user123456',
+      password: '123456789',
     },
     {
       firstName: 'عمر',
       lastName: 'سليم',
       email: 'omar@example.com',
       phone: '+213661234571',
-      password: 'user123456',
+      password: '123456789',
     },
   ];
 

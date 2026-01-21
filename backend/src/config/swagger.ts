@@ -65,8 +65,22 @@ const options = {
           type: 'object',
           properties: {
             _id: { type: 'string' },
-            name: { type: 'string' },
-            description: { type: 'string' },
+            name: {
+              type: "object",
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' },
+                fr: { type: 'string' }
+              }
+            },
+            description: {
+              type: "object",
+              properties: {
+                en: { type: 'string' },
+                ar: { type: 'string' },
+                fr: { type: 'string' }
+              }
+            },
             price: { type: 'number' },
             category: { type: 'string' },
             brand: { type: 'string' },
