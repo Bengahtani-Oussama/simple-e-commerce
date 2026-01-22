@@ -58,6 +58,8 @@ export const getSectionDeactivationEmail = (
       action: 'الإجراء المطلوب',
       actionText: 'يرجى إضافة منتجات جديدة لإعادة تفعيل القسم',
       viewSection: 'عرض القسم',
+      footer: 'هذا إشعار تلقائي من نظام إدارة الأقسام',
+      copyright: 'جميع الحقوق محفوظة',
     },
     en: {
       subject: 'Alert: Product Section Deactivated',
@@ -72,6 +74,8 @@ export const getSectionDeactivationEmail = (
       action: 'Action Required',
       actionText: 'Please add new products to reactivate this section',
       viewSection: 'View Section',
+      footer: 'This is an automated notification from the section management system',
+      copyright: 'All rights reserved',
     },
     fr: {
       subject: 'Alerte: Section de Produits Désactivée',
@@ -86,26 +90,32 @@ export const getSectionDeactivationEmail = (
       action: 'Action Requise',
       actionText: 'Veuillez ajouter de nouveaux produits pour réactiver cette section',
       viewSection: 'Voir la Section',
+      footer: 'Ceci est une notification automatique du système de gestion des sections',
+      copyright: 'Tous droits réservés',
     },
   };
 
   const t = content[lang];
   const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+  const isRTL = lang === 'ar';
+  const direction = isRTL ? 'rtl' : 'ltr';
+  const textAlign = isRTL ? 'right' : 'left';
 
   return `
     <!DOCTYPE html>
-    <html lang="${lang}">
+    <html lang="${lang}" dir="${direction}">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: ${isRTL ? "'Segoe UI', Tahoma, Arial" : "Arial, sans-serif"};
           line-height: 1.6;
           color: #333;
           background-color: #f4f4f4;
           margin: 0;
           padding: 0;
+          direction: ${direction};
         }
         .container {
           max-width: 600px;
@@ -127,10 +137,11 @@ export const getSectionDeactivationEmail = (
         }
         .content {
           padding: 30px 20px;
+          text-align: ${textAlign};
         }
         .info-box {
           background: #FEF2F2;
-          border-left: 4px solid #DC2626;
+          border-${isRTL ? 'right' : 'left'}: 4px solid #DC2626;
           padding: 15px;
           margin: 20px 0;
           border-radius: 5px;
@@ -140,6 +151,7 @@ export const getSectionDeactivationEmail = (
           justify-content: space-between;
           padding: 10px 0;
           border-bottom: 1px solid #E5E7EB;
+          flex-direction: ${isRTL ? 'row-reverse' : 'row'};
         }
         .info-row:last-child {
           border-bottom: none;
@@ -147,17 +159,20 @@ export const getSectionDeactivationEmail = (
         .info-label {
           font-weight: bold;
           color: #6B7280;
+          text-align: ${textAlign};
         }
         .info-value {
           color: #111827;
           font-weight: 600;
+          text-align: ${isRTL ? 'left' : 'right'};
         }
         .warning {
           background: #FEF3C7;
-          border-left: 4px solid #F59E0B;
+          border-${isRTL ? 'right' : 'left'}: 4px solid #F59E0B;
           padding: 15px;
           margin: 20px 0;
           border-radius: 5px;
+          text-align: ${textAlign};
         }
         .button {
           display: inline-block;
@@ -210,7 +225,7 @@ export const getSectionDeactivationEmail = (
             </div>
             <div class="info-row">
               <span class="info-label">${t.deactivatedAt}:</span>
-              <span class="info-value">${data.deactivatedAt.toLocaleString()}</span>
+              <span class="info-value">${data.deactivatedAt.toLocaleString(lang === 'ar' ? 'ar-DZ' : lang === 'fr' ? 'fr-FR' : 'en-US')}</span>
             </div>
           </div>
 
@@ -226,8 +241,8 @@ export const getSectionDeactivationEmail = (
           </center>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Algeria E-Commerce. All rights reserved.</p>
-          <p>This is an automated notification from the section management system.</p>
+          <p>© ${new Date().getFullYear()} Algeria E-Commerce. ${t.copyright}.</p>
+          <p>${t.footer}.</p>
         </div>
       </div>
     </body>
@@ -255,6 +270,8 @@ export const getSectionLowStockEmail = (
       warningText: 'إذا تم نفاد مخزون منتج واحد آخر، سيتم إيقاف القسم تلقائياً.',
       action: 'يرجى إضافة منتجات جديدة في أقرب وقت ممكن',
       viewSection: 'عرض القسم',
+      footer: 'هذا إشعار تلقائي من نظام إدارة الأقسام',
+      copyright: 'جميع الحقوق محفوظة',
     },
     en: {
       subject: 'Warning: Section Near Minimum Threshold',
@@ -268,6 +285,8 @@ export const getSectionLowStockEmail = (
       warningText: 'If one more product goes out of stock, this section will be automatically deactivated.',
       action: 'Please add new products as soon as possible',
       viewSection: 'View Section',
+      footer: 'This is an automated notification from the section management system',
+      copyright: 'All rights reserved',
     },
     fr: {
       subject: 'Avertissement: Section Proche du Seuil Minimum',
@@ -281,26 +300,32 @@ export const getSectionLowStockEmail = (
       warningText: 'Si un autre produit est en rupture de stock, cette section sera automatiquement désactivée.',
       action: 'Veuillez ajouter de nouveaux produits dès que possible',
       viewSection: 'Voir la Section',
+      footer: 'Ceci est une notification automatique du système de gestion des sections',
+      copyright: 'Tous droits réservés',
     },
   };
 
   const t = content[lang];
   const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+  const isRTL = lang === 'ar';
+  const direction = isRTL ? 'rtl' : 'ltr';
+  const textAlign = isRTL ? 'right' : 'left';
 
   return `
     <!DOCTYPE html>
-    <html lang="${lang}">
+    <html lang="${lang}" dir="${direction}">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: ${isRTL ? "'Segoe UI', Tahoma, Arial" : "Arial, sans-serif"};
           line-height: 1.6;
           color: #333;
           background-color: #f4f4f4;
           margin: 0;
           padding: 0;
+          direction: ${direction};
         }
         .container {
           max-width: 600px;
@@ -322,10 +347,11 @@ export const getSectionLowStockEmail = (
         }
         .content {
           padding: 30px 20px;
+          text-align: ${textAlign};
         }
         .info-box {
           background: #FFFBEB;
-          border-left: 4px solid #F59E0B;
+          border-${isRTL ? 'right' : 'left'}: 4px solid #F59E0B;
           padding: 15px;
           margin: 20px 0;
           border-radius: 5px;
@@ -335,6 +361,7 @@ export const getSectionLowStockEmail = (
           justify-content: space-between;
           padding: 10px 0;
           border-bottom: 1px solid #E5E7EB;
+          flex-direction: ${isRTL ? 'row-reverse' : 'row'};
         }
         .info-row:last-child {
           border-bottom: none;
@@ -342,17 +369,20 @@ export const getSectionLowStockEmail = (
         .info-label {
           font-weight: bold;
           color: #6B7280;
+          text-align: ${textAlign};
         }
         .info-value {
           color: #111827;
           font-weight: 600;
+          text-align: ${isRTL ? 'left' : 'right'};
         }
         .warning {
           background: #FEF3C7;
-          border-left: 4px solid #F59E0B;
+          border-${isRTL ? 'right' : 'left'}: 4px solid #F59E0B;
           padding: 15px;
           margin: 20px 0;
           border-radius: 5px;
+          text-align: ${textAlign};
         }
         .button {
           display: inline-block;
@@ -414,8 +444,8 @@ export const getSectionLowStockEmail = (
           </center>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Algeria E-Commerce. All rights reserved.</p>
-          <p>This is an automated notification from the section management system.</p>
+          <p>© ${new Date().getFullYear()} Algeria E-Commerce. ${t.copyright}.</p>
+          <p>${t.footer}.</p>
         </div>
       </div>
     </body>
@@ -444,6 +474,11 @@ export const getCleanupSummaryEmail = (
       details: 'التفاصيل',
       noChanges: 'لم يتم إجراء أي تغييرات',
       viewDashboard: 'عرض لوحة التحكم',
+      removed: 'محذوف',
+      deactivated: 'معطل',
+      lowStock: 'مخزون منخفض',
+      footer: 'هذا إشعار تلقائي من نظام إدارة الأقسام',
+      copyright: 'جميع الحقوق محفوظة',
     },
     en: {
       subject: 'Daily Section Cleanup Report',
@@ -458,6 +493,11 @@ export const getCleanupSummaryEmail = (
       details: 'Details',
       noChanges: 'No changes were made',
       viewDashboard: 'View Dashboard',
+      removed: 'removed',
+      deactivated: 'DEACTIVATED',
+      lowStock: 'LOW STOCK',
+      footer: 'This is an automated notification from the section management system',
+      copyright: 'All rights reserved',
     },
     fr: {
       subject: 'Rapport de Nettoyage Quotidien des Sections',
@@ -472,19 +512,28 @@ export const getCleanupSummaryEmail = (
       details: 'Détails',
       noChanges: 'Aucun changement effectué',
       viewDashboard: 'Voir le Tableau de Bord',
+      removed: 'supprimé',
+      deactivated: 'DÉSACTIVÉ',
+      lowStock: 'STOCK FAIBLE',
+      footer: 'Ceci est une notification automatique du système de gestion des sections',
+      copyright: 'Tous droits réservés',
     },
   };
 
   const t = content[lang];
   const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+  const isRTL = lang === 'ar';
+  const direction = isRTL ? 'rtl' : 'ltr';
+  const textAlign = isRTL ? 'right' : 'left';
 
   const detailsHtml = data.details.length > 0
     ? data.details.map(detail => `
         <div class="detail-row">
           <span class="detail-name">${detail.sectionName}</span>
           <span class="detail-info">
-            ${detail.removedCount} removed
-            ${detail.status === 'deactivated' ? ' - <strong style="color: #DC2626;">DEACTIVATED</strong>' : ''}
+            ${detail.removedCount} ${t.removed}
+            ${detail.status === 'deactivated' ? ` - <strong style="color: #DC2626;">${t.deactivated}</strong>` : ''}
+            ${detail.status === 'low-stock' ? ` - <strong style="color: #F59E0B;">${t.lowStock}</strong>` : ''}
           </span>
         </div>
       `).join('')
@@ -492,18 +541,19 @@ export const getCleanupSummaryEmail = (
 
   return `
     <!DOCTYPE html>
-    <html lang="${lang}">
+    <html lang="${lang}" dir="${direction}">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: ${isRTL ? "'Segoe UI', Tahoma, Arial" : "Arial, sans-serif"};
           line-height: 1.6;
           color: #333;
           background-color: #f4f4f4;
           margin: 0;
           padding: 0;
+          direction: ${direction};
         }
         .container {
           max-width: 600px;
@@ -525,6 +575,10 @@ export const getCleanupSummaryEmail = (
         }
         .content {
           padding: 30px 20px;
+          text-align: ${textAlign};
+        }
+        .content h3 {
+          text-align: ${textAlign};
         }
         .summary-box {
           display: grid;
@@ -560,14 +614,17 @@ export const getCleanupSummaryEmail = (
           background: #F9FAFB;
           margin-bottom: 5px;
           border-radius: 5px;
+          flex-direction: ${isRTL ? 'row-reverse' : 'row'};
         }
         .detail-name {
           font-weight: 600;
           color: #111827;
+          text-align: ${textAlign};
         }
         .detail-info {
           color: #6B7280;
           font-size: 14px;
+          text-align: ${isRTL ? 'left' : 'right'};
         }
         .button {
           display: inline-block;
@@ -619,7 +676,7 @@ export const getCleanupSummaryEmail = (
             </div>
             <div class="summary-item">
               <div class="summary-value" style="font-size: 18px;">
-                ${data.cleanupDate.toLocaleDateString()}
+                ${data.cleanupDate.toLocaleDateString(lang === 'ar' ? 'ar-DZ' : lang === 'fr' ? 'fr-FR' : 'en-US')}
               </div>
               <div class="summary-label">${t.cleanupDate}</div>
             </div>
@@ -637,8 +694,8 @@ export const getCleanupSummaryEmail = (
           </center>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Algeria E-Commerce. All rights reserved.</p>
-          <p>This is an automated notification from the section management system.</p>
+          <p>© ${new Date().getFullYear()} Algeria E-Commerce. ${t.copyright}.</p>
+          <p>${t.footer}.</p>
         </div>
       </div>
     </body>

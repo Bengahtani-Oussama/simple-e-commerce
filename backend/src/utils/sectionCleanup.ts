@@ -1,12 +1,24 @@
-import Section from '../models/section';
+import Section from '../models/Section';
 import Product from '../models/Product';
 import Admin from '../models/Admin';
+import AdminPreferences from '../models/AdminPreferences';
 import mongoose from 'mongoose';
 import {
   sendSectionDeactivationNotification,
   sendSectionLowStockNotification,
   sendCleanupSummaryNotification,
 } from './sectionEmailTemplates';
+
+// Store notifications for digest mode
+interface DigestNotification {
+  adminId: string;
+  adminEmail: string;
+  language: 'ar' | 'en' | 'fr';
+  deactivations: any[];
+  lowStockWarnings: any[];
+}
+
+const digestQueue: Map<string, DigestNotification> = new Map();
 
 // Helper function to check if products have stock
 const checkProductsStock = async (productIds: string[]): Promise<{
@@ -138,22 +150,69 @@ export const autoCleanSections = async (): Promise<{
     console.log(`   • Sections deactivated: ${deactivatedSections}`);
     console.log('═══════════════════════════════════════════\n');
 
-    // Send email notifications to all admins
+    // Send email notifications to admins based on their preferences
     const admins = await Admin.find({ isActive: true });
     
     for (const admin of admins) {
-      // Send deactivation notifications
-      for (const deactivatedData of deactivatedList) {
-        await sendSectionDeactivationNotification(admin.email, deactivatedData, 'en');
+      // Get admin preferences
+      let preferences = await AdminPreferences.findOne({ admin: admin._id });
+      
+      if (!preferences) {
+        // Create default preferences
+        preferences = await AdminPreferences.create({ admin: admin._id });
       }
 
-      // Send low stock warnings
-      for (const lowStockData of lowStockList) {
-        await sendSectionLowStockNotification(admin.email, lowStockData, 'en');
+      const language = preferences.preferredLanguage;
+
+      // Check if digest mode is enabled
+      if (preferences.emailNotifications.digestMode) {
+        // Queue notifications for digest
+        let digest = digestQueue.get(admin._id.toString());
+        
+        if (!digest) {
+          digest = {
+            adminId: admin._id.toString(),
+            adminEmail: admin.email,
+            language,
+            deactivations: [],
+            lowStockWarnings: [],
+          };
+          digestQueue.set(admin._id.toString(), digest);
+        }
+
+        // Add to digest queue
+        digest.deactivations.push(...deactivatedList);
+        digest.lowStockWarnings.push(...lowStockList);
+      } else {
+        // Send immediate notifications
+        for (const deactivatedData of deactivatedList) {
+          if (preferences.canSendNotification(deactivatedData.sectionId, 'deactivation')) {
+            await sendSectionDeactivationNotification(
+              admin.email,
+              deactivatedData,
+              language
+            );
+            preferences.recordNotification(deactivatedData.sectionId, 'deactivation');
+          }
+        }
+
+        for (const lowStockData of lowStockList) {
+          if (preferences.canSendNotification(lowStockData.sectionId, 'lowStock')) {
+            await sendSectionLowStockNotification(
+              admin.email,
+              lowStockData,
+              language
+            );
+            preferences.recordNotification(lowStockData.sectionId, 'lowStock');
+          }
+        }
       }
 
-      // Send daily summary if there were any changes
-      if (totalCleaned > 0 || deactivatedSections > 0) {
+      // Send daily summary if enabled and there were changes
+      if (
+        preferences.emailNotifications.dailyCleanupSummary &&
+        (totalCleaned > 0 || deactivatedSections > 0)
+      ) {
         await sendCleanupSummaryNotification(admin.email, {
           totalCleaned,
           sectionsProcessed: sections.length,
@@ -164,11 +223,14 @@ export const autoCleanSections = async (): Promise<{
             removedCount: d.removedCount,
             status: d.status,
           })),
-        }, 'en');
+        }, language);
       }
+
+      // Save updated preferences (notification history)
+      await preferences.save();
     }
 
-    console.log(`✉️  Email notifications sent to ${admins.length} admin(s)\n`);
+    console.log(`✉️  Email notifications processed for ${admins.length} admin(s)\n`);
 
     return {
       success: true,
@@ -190,21 +252,157 @@ export const autoCleanSections = async (): Promise<{
 };
 
 /**
- * Schedule cleanup to run periodically
- * @param intervalHours - How often to run cleanup (in hours)
+ * Send digest emails (called once per day)
  */
-export const scheduleAutoCleanup = (intervalHours: number = 24): void => {
-  const intervalMs = intervalHours * 60 * 60 * 1000;
+export const sendDigestEmails = async (): Promise<void> => {
+  try {
+    console.log('\n📬 Sending Digest Emails...');
 
-  console.log(`\n🕐 Auto-cleanup scheduled to run every ${intervalHours} hours`);
+    for (const [adminId, digest] of digestQueue.entries()) {
+      const totalNotifications =
+        digest.deactivations.length + digest.lowStockWarnings.length;
 
-  // Run immediately on startup
-  autoCleanSections();
+      if (totalNotifications === 0) continue;
 
-  // Then run on schedule
-  setInterval(() => {
-    autoCleanSections();
-  }, intervalMs);
+      // Get admin preferences to check cooldowns
+      const preferences = await AdminPreferences.findOne({ admin: adminId });
+
+      if (!preferences) continue;
+
+      // Filter notifications based on cooldown
+      const validDeactivations = digest.deactivations.filter((d: any) =>
+        preferences.canSendNotification(d.sectionId, 'deactivation')
+      );
+
+      const validLowStock = digest.lowStockWarnings.filter((d: any) =>
+        preferences.canSendNotification(d.sectionId, 'lowStock')
+      );
+
+      // Send combined digest email
+      if (validDeactivations.length > 0 || validLowStock.length > 0) {
+        // You can create a combined digest template or send summary
+        await sendCleanupSummaryNotification(
+          digest.adminEmail,
+          {
+            totalCleaned: validDeactivations.reduce(
+              (sum: number, d: any) => sum + d.removedProducts,
+              0
+            ),
+            sectionsProcessed: validDeactivations.length + validLowStock.length,
+            deactivatedSections: validDeactivations.length,
+            cleanupDate: new Date(),
+            details: [
+              ...validDeactivations.map((d: any) => ({
+                sectionName: d.sectionName.en,
+                removedCount: d.removedProducts,
+                status: 'deactivated',
+              })),
+              ...validLowStock.map((d: any) => ({
+                sectionName: d.sectionName.en,
+                removedCount: 0,
+                status: 'low-stock',
+              })),
+            ],
+          },
+          digest.language
+        );
+
+        // Record sent notifications
+        validDeactivations.forEach((d: any) => {
+          preferences.recordNotification(d.sectionId, 'deactivation');
+        });
+        validLowStock.forEach((d: any) => {
+          preferences.recordNotification(d.sectionId, 'lowStock');
+        });
+
+        await preferences.save();
+
+        console.log(
+          `✉️  Digest sent to ${digest.adminEmail} (${validDeactivations.length + validLowStock.length} notifications)`
+        );
+      }
+    }
+
+    // Clear digest queue
+    digestQueue.clear();
+    console.log('📬 Digest emails sent\n');
+  } catch (error) {
+    console.error('❌ Error sending digest emails:', error);
+  }
+};
+
+/**
+ * Process scheduled sections (activate/deactivate based on dates)
+ */
+export const processScheduledSections = async (): Promise<{
+  activated: number;
+  deactivated: number;
+}> => {
+  try {
+    console.log('\n📅 Processing Scheduled Sections...');
+
+    const now = new Date();
+    let activated = 0;
+    let deactivated = 0;
+
+    // Find sections with scheduling enabled
+    const scheduledSections = await Section.find({
+      'scheduling.enabled': true,
+    });
+
+    for (const section of scheduledSections) {
+      let statusChanged = false;
+
+      // Check if should be activated
+      if (
+        section.scheduling.startDate &&
+        now >= section.scheduling.startDate &&
+        !section.isActive
+      ) {
+        // Check if end date hasn't passed
+        if (!section.scheduling.endDate || now < section.scheduling.endDate) {
+          section.isActive = true;
+          activated++;
+          statusChanged = true;
+          console.log(`✅ Activated: ${section.name.en}`);
+        }
+      }
+
+      // Check if should be deactivated
+      if (
+        section.scheduling.endDate &&
+        now >= section.scheduling.endDate &&
+        section.isActive
+      ) {
+        if (section.scheduling.autoArchive) {
+          // Archive the section (keep data, just deactivate)
+          section.isActive = false;
+          deactivated++;
+          statusChanged = true;
+          console.log(`📦 Archived: ${section.name.en}`);
+        } else {
+          // Just deactivate
+          section.isActive = false;
+          deactivated++;
+          statusChanged = true;
+          console.log(`⏹️  Deactivated: ${section.name.en}`);
+        }
+      }
+
+      if (statusChanged) {
+        await section.save();
+      }
+    }
+
+    console.log('\n📊 Scheduling Summary:');
+    console.log(`   • Sections activated: ${activated}`);
+    console.log(`   • Sections deactivated: ${deactivated}\n`);
+
+    return { activated, deactivated };
+  } catch (error) {
+    console.error('❌ Error processing scheduled sections:', error);
+    return { activated: 0, deactivated: 0 };
+  }
 };
 
 /**
@@ -261,8 +459,44 @@ export const cleanSectionById = async (sectionId: string): Promise<{
   }
 };
 
+/**
+ * Schedule cleanup to run periodically
+ * @param intervalHours - How often to run cleanup (in hours)
+ */
+export const scheduleAutoCleanup = (intervalHours: number = 24): void => {
+  const intervalMs = intervalHours * 60 * 60 * 1000;
+
+  console.log(`\n🕐 Auto-cleanup scheduled to run every ${intervalHours} hours`);
+  console.log(`🕐 Scheduled sections check runs every hour`);
+  console.log(`🕐 Digest emails sent daily at midnight\n`);
+
+  // Run cleanup and scheduling immediately on startup
+  (async () => {
+    await processScheduledSections();
+    await autoCleanSections();
+  })();
+
+  // Schedule cleanup
+  setInterval(async () => {
+    await processScheduledSections();
+    await autoCleanSections();
+  }, intervalMs);
+
+  // Check scheduled sections every hour
+  setInterval(async () => {
+    await processScheduledSections();
+  }, 60 * 60 * 1000); // Every hour
+
+  // Send digest emails daily at midnight (or every 24 hours)
+  setInterval(async () => {
+    await sendDigestEmails();
+  }, 24 * 60 * 60 * 1000); // Every 24 hours
+};
+
 export default {
   autoCleanSections,
   scheduleAutoCleanup,
   cleanSectionById,
+  sendDigestEmails,
+  processScheduledSections,
 };

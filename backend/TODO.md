@@ -1,3 +1,17 @@
+backend\src\controllers\adminPreferencesController.ts
+backend\src\controllers\productPriorityController.ts
+backend\src\controllers\sectionController.ts
+backend\src\models\AdminPreferences.ts
+backend\src\models\Section.ts
+backend\src\models\Section.ts
+backend\src\routes\adminPreferencesRoutes.ts
+backend\src\routes\sectionRoutes.ts
+backend\src\scripts\seedSections.ts
+backend\src\utils\sectionCleanup.ts
+backend\src\utils\sectionEmailTemplates.ts
+backend\src\server.ts
+
+
 # API Documentation Creation TODO
 Admin:
 {

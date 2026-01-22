@@ -11,6 +11,17 @@ import {
   cleanOutOfStockProducts,
   cleanAllSectionsStock,
 } from '../controllers/sectionController';
+import {
+  getSectionPriorities,
+  reorderProducts,
+  togglePinProduct,
+  toggleFeatureProduct,
+  updateProductPriority,
+  moveProductToPosition,
+  getPinnedProducts,
+  getFeaturedProducts,
+  bulkUpdatePriorities,
+} from '../controllers/productPriorityController';
 import { protect, isAdmin } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -385,5 +396,277 @@ router.post('/:id/clean-stock', cleanOutOfStockProducts);
  *                       type: array
  */
 router.post('/clean-all-stock', cleanAllSectionsStock);
+
+// ============================================
+// PRODUCT PRIORITY ROUTES (Admin only)
+// ============================================
+
+/**
+ * @swagger
+ * /sections/{id}/priorities:
+ *   get:
+ *     summary: Get products with priority settings for a section
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Products with priorities retrieved
+ */
+router.get('/:id/priorities', getSectionPriorities);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/reorder:
+ *   put:
+ *     summary: Reorder products (drag and drop)
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productOrder
+ *             properties:
+ *               productOrder:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: string
+ *                     position:
+ *                       type: number
+ *     responses:
+ *       200:
+ *         description: Products reordered successfully
+ */
+router.put('/:id/priorities/reorder', reorderProducts);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/pinned:
+ *   get:
+ *     summary: Get pinned products for section
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Pinned products retrieved
+ */
+router.get('/:id/priorities/pinned', getPinnedProducts);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/featured:
+ *   get:
+ *     summary: Get featured products for section
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Featured products retrieved
+ */
+router.get('/:id/priorities/featured', getFeaturedProducts);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/bulk:
+ *   put:
+ *     summary: Bulk update product priorities
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - updates
+ *             properties:
+ *               updates:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: string
+ *                     position:
+ *                       type: number
+ *                     isPinned:
+ *                       type: boolean
+ *                     isFeatured:
+ *                       type: boolean
+ *                     customNote:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Priorities updated successfully
+ */
+router.put('/:id/priorities/bulk', bulkUpdatePriorities);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/{productId}:
+ *   put:
+ *     summary: Update single product priority settings
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               position:
+ *                 type: number
+ *               isPinned:
+ *                 type: boolean
+ *               isFeatured:
+ *                 type: boolean
+ *               customNote:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Product priority updated
+ */
+router.put('/:id/priorities/:productId', updateProductPriority);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/{productId}/pin:
+ *   put:
+ *     summary: Toggle pin product to top
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product pin status toggled
+ */
+router.put('/:id/priorities/:productId/pin', togglePinProduct);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/{productId}/feature:
+ *   put:
+ *     summary: Toggle product featured status
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product featured status toggled
+ */
+router.put('/:id/priorities/:productId/feature', toggleFeatureProduct);
+
+/**
+ * @swagger
+ * /sections/{id}/priorities/{productId}/move:
+ *   put:
+ *     summary: Move product to specific position
+ *     tags: [Sections - Product Priority]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPosition
+ *             properties:
+ *               newPosition:
+ *                 type: number
+ *                 minimum: 0
+ *     responses:
+ *       200:
+ *         description: Product moved successfully
+ */
+router.put('/:id/priorities/:productId/move', moveProductToPosition);
 
 export default router;

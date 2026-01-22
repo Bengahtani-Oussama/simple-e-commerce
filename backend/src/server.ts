@@ -24,6 +24,7 @@ import staffRoutes from "./routes/staffRoutes";
 import inventoryRoutes from "./routes/inventoryRoutes";
 import sectionRoutes from "./routes/sectionRoutes";
 import { scheduleAutoCleanup } from "./utils/sectionCleanup";
+import adminPreferencesRoutes from './routes/adminPreferencesRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -86,6 +87,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/admin/inventory", inventoryRoutes);
 app.use("/api/sections", sectionRoutes);
+app.use('/api/admin/preferences', adminPreferencesRoutes);
 
 // Error handling
 app.use(notFound);

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import connectDatabase from '../config/database';
-import Section from '../models/section';
+import Section from '../models/Section';
 import Product from '../models/Product';
 import mongoose from 'mongoose';
 

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Section from '../models/section';
+import Section from '../models/Section';
 import Product from '../models/Product';
 import { AuthRequest } from '../types';
 import mongoose from 'mongoose';
@@ -177,7 +177,7 @@ export const getSection = async (req: Request, res: Response): Promise<void> => 
 // @route   POST /api/admin/sections
 export const createSection = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, description, products, isActive, order, minProducts } = req.body;
+    const { name, description, products, isActive, order, minProducts, scheduling } = req.body;
 
     // Validate products array
     if (!products || !Array.isArray(products) || products.length < (minProducts || 5)) {
@@ -186,6 +186,22 @@ export const createSection = async (req: AuthRequest, res: Response): Promise<vo
         message: `Section must have at least ${minProducts || 5} products`,
       });
       return;
+    }
+
+    // Validate scheduling dates if enabled
+    if (scheduling?.enabled) {
+      if (scheduling.startDate && scheduling.endDate) {
+        const start = new Date(scheduling.startDate);
+        const end = new Date(scheduling.endDate);
+        
+        if (end <= start) {
+          res.status(400).json({
+            success: false,
+            message: 'End date must be after start date',
+          });
+          return;
+        }
+      }
     }
 
     // Check product stock availability
@@ -206,14 +222,27 @@ export const createSection = async (req: AuthRequest, res: Response): Promise<vo
     // Generate slug from English name
     const slug = generateSlug(name.en) + `-${Date.now()}`;
 
+    // Create product priorities array
+    const productPriorities = stockCheck.validProducts.map((productId, index) => ({
+      product: new mongoose.Types.ObjectId(productId),
+      position: index,
+      isPinned: false,
+      isFeatured: false,
+    }));
+
     const section = await Section.create({
       name,
       slug,
       description,
-      products: stockCheck.validProducts, // Only include products with stock
+      products: stockCheck.validProducts, // Keep for backward compatibility
+      productPriorities, // New priority system
       isActive: isActive !== undefined ? isActive : true,
       order: order || 0,
       minProducts: minProducts || 5,
+      scheduling: scheduling || {
+        enabled: false,
+        autoArchive: false,
+      },
     });
 
     const populatedSection = await Section.findById(section._id).populate({
@@ -238,7 +267,7 @@ export const createSection = async (req: AuthRequest, res: Response): Promise<vo
 // @route   PUT /api/admin/sections/:id
 export const updateSection = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, description, products, isActive, order } = req.body;
+    const { name, description, products, isActive, order, scheduling } = req.body;
 
     const section = await Section.findById(req.params.id);
 
@@ -271,6 +300,22 @@ export const updateSection = async (req: Request, res: Response): Promise<void> 
       );
     }
 
+    // Validate scheduling dates if being updated
+    if (scheduling?.enabled) {
+      if (scheduling.startDate && scheduling.endDate) {
+        const start = new Date(scheduling.startDate);
+        const end = new Date(scheduling.endDate);
+        
+        if (end <= start) {
+          res.status(400).json({
+            success: false,
+            message: 'End date must be after start date',
+          });
+          return;
+        }
+      }
+    }
+
     // Update other fields
     if (name) {
       section.name = name;
@@ -279,6 +324,12 @@ export const updateSection = async (req: Request, res: Response): Promise<void> 
     if (description !== undefined) section.description = description;
     if (isActive !== undefined) section.isActive = isActive;
     if (order !== undefined) section.order = order;
+    if (scheduling !== undefined) {
+      section.scheduling = {
+        ...section.scheduling,
+        ...scheduling,
+      };
+    }
 
     await section.save();
 
