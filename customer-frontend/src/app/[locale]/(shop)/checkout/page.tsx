@@ -52,6 +52,10 @@ export default function CheckoutPage() {
     fetchAddresses();
   }, [isAuthenticated, cart]);
 
+  useEffect(() => {
+    setShippingCost(shippingMethod === 'home_delivery' ? 500 : 300);
+  }, [shippingMethod]);
+
   const fetchAddresses = async () => {
     try {
       const response = await api.get('/users/addresses');
@@ -113,45 +117,45 @@ export default function CheckoutPage() {
     setCouponCode('');
   };
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      toast({
-        title: t('common.error'),
-        description: t('checkout.required'),
-        variant: 'destructive',
-      });
-      return;
-    }
+const handlePlaceOrder = async () => {
+  if (!selectedAddress) {
+    toast({
+      title: t('common.error'),
+      description: t('checkout.required'),
+      variant: 'destructive',
+    });
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const response = await api.post('/orders', {
-        shippingAddressId: selectedAddress,
-        shippingMethod,
-        shippingCost,
-        customerNote,
-        couponDiscount: couponDiscount || undefined,
-      });
+  setLoading(true);
+  try {
+    const response = await api.post('/orders', {
+      shippingAddressId: selectedAddress,
+      shippingMethod,
+      shippingCost,
+      customerNote,
+      couponCode: appliedCoupon?.code || undefined,  // Pass coupon code instead of discount
+    });
 
-      const order = response.data.data;
-      await clearCart();
+    const order = response.data.data;
+    await clearCart();
 
-      toast({
-        title: t('orders.title'),
-        description: `${t('orders.orderNumber')}: ${order.orderNumber}`,
-      });
+    toast({
+      title: t('orders.title'),
+      description: `${t('orders.orderNumber')}: ${order.orderNumber}`,
+    });
 
-      router.push(`/${locale}/account/orders/${order._id}`);
-    } catch (error) {
-      toast({
-        title: t('common.error'),
-        description: handleApiError(error),
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    router.push(`/${locale}/account/orders/${order._id}`);
+  } catch (error) {
+    toast({
+      title: t('common.error'),
+      description: handleApiError(error),
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!cart) return null;
 

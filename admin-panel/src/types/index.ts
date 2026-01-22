@@ -119,6 +119,12 @@ export interface Order {
   adminNote?: string;
   hasReturn: boolean;
   returnTotal: number;
+  coupon?: {
+    code: string;
+    type: 'percentage' | 'fixed' | 'free_shipping';
+    discount: number;
+    freeShipping: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { Switch } from '../ui/switch';
 
 interface AddressDialogProps {
   open: boolean;
@@ -177,6 +178,17 @@ export default function AddressDialog({
               id="postalCode"
               value={formData.postalCode}
               onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Is default address logic */}
+          <div className="flex items-center gap-4">
+            <Label htmlFor="isDefault">{t('addresses.isDefault')}</Label>
+            <Switch
+              id="isDefault"
+              checked={formData.isDefault}
+              onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked })}
               disabled={loading}
             />
           </div>

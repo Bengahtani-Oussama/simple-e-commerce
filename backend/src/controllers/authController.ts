@@ -334,6 +334,47 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user?.id).select('+password');
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    // Verify current password
+    const isPasswordCorrect = await user.comparePassword(currentPassword);
+    if (!isPasswordCorrect) {
+      res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+      return;
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Password change failed',
+    });
+  }
+};
+
 // @desc    Get current user profile
 // @route   GET /api/auth/me
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {

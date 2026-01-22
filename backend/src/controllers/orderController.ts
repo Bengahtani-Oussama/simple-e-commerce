@@ -5,29 +5,27 @@ import Product from '../models/Product';
 import User from '../models/User';
 import { AuthRequest } from '../types';
 import { sendEmail } from '../utils/sendEmail';
+import Coupon from '../models/Coupon';
 
 // @desc    Create order from cart
 // @route   POST /api/orders
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { shippingAddressId, shippingMethod, shippingCost, customerNote, couponDiscount } = req.body;
+    const { 
+      shippingAddressId, 
+      shippingMethod, 
+      shippingCost, 
+      customerNote, 
+      couponCode  // Changed from couponDiscount to couponCode
+    } = req.body;
 
     // Validate and parse numeric values
     const shippingCostNum = Number(shippingCost);
-    const couponDiscountNum = couponDiscount ? Number(couponDiscount) : 0;
 
     if (isNaN(shippingCostNum)) {
       res.status(400).json({
         success: false,
         message: 'Invalid shipping cost',
-      });
-      return;
-    }
-
-    if (isNaN(couponDiscountNum)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid coupon discount',
       });
       return;
     }
@@ -52,7 +50,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Get shipping address using find() instead of id()
+    // Get shipping address
     const shippingAddress = user.addresses.find(
       (addr) => addr._id?.toString() === shippingAddressId
     );
@@ -87,10 +85,64 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       }
     }
 
-    // Calculate total
+    // Calculate subtotal
     const subtotal = cart.subtotal;
-    const total = subtotal + shippingCostNum - couponDiscountNum
-    // const total = subtotal + shippingCost;
+    let couponDiscount = 0;
+    let couponData = null;
+
+    // Validate and apply coupon if provided
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+
+      if (!coupon) {
+        res.status(404).json({
+          success: false,
+          message: 'Invalid coupon code',
+        });
+        return;
+      }
+
+      // Check customer usage count
+      const customerUsageCount = await Order.countDocuments({
+        user: req.user?.id,
+        'coupon.code': coupon.code,
+      });
+
+      // Validate coupon
+      const validation = coupon.validateForOrder(
+        subtotal,
+        req.user?.id as string,
+        customerUsageCount
+      );
+
+      if (!validation.valid) {
+        res.status(400).json({
+          success: false,
+          message: validation.reason,
+        });
+        return;
+      }
+
+      // Calculate discount
+      const discountResult = coupon.calculateDiscount(subtotal, shippingCostNum);
+      couponDiscount = discountResult.discount;
+
+      // Prepare coupon data for order
+      couponData = {
+        code: coupon.code,
+        type: coupon.type,
+        discount: couponDiscount,
+        freeShipping: discountResult.freeShipping,
+      };
+
+      // Increment coupon usage count
+      coupon.usedCount += 1;
+      await coupon.save();
+    }
+
+    // Calculate final total
+    const finalShippingCost = couponData?.freeShipping ? 0 : shippingCostNum;
+    const total = subtotal + finalShippingCost - couponDiscount;
 
     // Convert cart items to plain objects
     const orderItems = cart.items.map((item) => ({
@@ -111,7 +163,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       user: req.user?.id,
       items: orderItems,
       subtotal,
-      shippingCost: shippingCostNum,
+      shippingCost: finalShippingCost,
       total,
       orderNumber: Date.now().toString(),
       shippingAddress: {
@@ -124,7 +176,8 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       },
       shippingMethod,
       customerNote,
-      couponDiscount: couponDiscountNum,
+      coupon: couponData,  // Store full coupon information
+      couponDiscount,
     });
 
     // Reduce stock for each variant
@@ -417,8 +470,10 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
       greeting: `مرحباً ${user.firstName}،`,
       message: 'شكراً لطلبك! تم استلام طلبك بنجاح.',
       orderNumber: 'رقم الطلب',
-      total: 'المجموع',
+      subtotal: 'المجموع الفرعي',
       shipping: 'الشحن',
+      coupon: 'خصم القسيمة',
+      total: 'المجموع',
       address: 'عنوان التوصيل',
     },
     en: {
@@ -426,8 +481,10 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
       greeting: `Hello ${user.firstName},`,
       message: 'Thank you for your order! Your order has been received successfully.',
       orderNumber: 'Order Number',
-      total: 'Total',
+      subtotal: 'Subtotal',
       shipping: 'Shipping',
+      coupon: 'Coupon Discount',
+      total: 'Total',
       address: 'Delivery Address',
     },
     fr: {
@@ -435,16 +492,16 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
       greeting: `Bonjour ${user.firstName},`,
       message: 'Merci pour votre commande! Votre commande a été reçue avec succès.',
       orderNumber: 'Numéro de commande',
-      total: 'Total',
+      subtotal: 'Sous-total',
       shipping: 'Livraison',
+      coupon: 'Réduction coupon',
+      total: 'Total',
       address: 'Adresse de livraison',
     },
   };
 
-  // const t = content["en"];
   const t = content[lang];
 
-  // <html lang="${"en"}">
   return `
   <!DOCTYPE html>
    <html lang="${lang}">
@@ -457,6 +514,7 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
         .content { padding: 20px; background: #f9f9f9; }
         .order-info { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; }
         .total { font-size: 20px; font-weight: bold; color: #4F46E5; }
+        .coupon { color: #10b981; font-weight: bold; }
       </style>
     </head>
     <body>
@@ -469,8 +527,10 @@ function getOrderConfirmationEmail(order: any, user: any, lang: 'ar' | 'en' | 'f
           <p>${t.message}</p>
           <div class="order-info">
             <p><strong>${t.orderNumber}:</strong> ${order.orderNumber}</p>
-            <p><strong>${t.total}:</strong> <span class="total">${order.total} DA</span></p>
+            <p><strong>${t.subtotal}:</strong> ${order.subtotal} DA</p>
             <p><strong>${t.shipping}:</strong> ${order.shippingCost} DA</p>
+            ${order.coupon ? `<p class="coupon"><strong>${t.coupon} (${order.coupon.code}):</strong> -${order.couponDiscount} DA</p>` : ''}
+            <p><strong>${t.total}:</strong> <span class="total">${order.total} DA</span></p>
             <p><strong>${t.address}:</strong><br>
             ${order.shippingAddress.fullName}<br>
             ${order.shippingAddress.addressLine}<br>

@@ -9,8 +9,57 @@ const router = express.Router();
 // All routes require admin authentication
 router.use(protect, isAdmin);
 
-// @desc    Get all customers with advanced filters
-// @route   GET /api/admin/customers
+/**
+ * @swagger
+ * /admin/customers:
+ *   get:
+ *     summary: Get all customers with advanced filters and statistics
+ *     tags: [Admin - Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name, email, or phone
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, verified, unverified]
+ *       - in: query
+ *         name: minSpent
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: maxSpent
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Customers retrieved with statistics
+ */
 router.get('/', async (req, res) => {
   try {
     const { 
@@ -140,6 +189,26 @@ router.get('/', async (req, res) => {
 
 // @desc    Get single customer with order history
 // @route   GET /api/admin/customers/:id
+/**
+ * @swagger
+ * /admin/customers/{id}:
+ *   get:
+ *     summary: Get customer details with order history and statistics
+ *     tags: [Admin - Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer details with orders and statistics
+ *       404:
+ *         description: Customer not found
+ */
 router.get('/:id', async (req, res) => {
   try {
     const customer = await User.findById(req.params.id).select(
@@ -203,6 +272,26 @@ router.get('/:id', async (req, res) => {
 
 // @desc    Toggle customer active status
 // @route   PUT /api/admin/customers/:id/toggle-status
+/**
+ * @swagger
+ * /admin/customers/{id}/toggle-status:
+ *   put:
+ *     summary: Toggle customer active status
+ *     tags: [Admin - Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer status toggled successfully
+ *       404:
+ *         description: Customer not found
+ */
 router.put('/:id/toggle-status', async (req, res) => {
   try {
     const customer = await User.findById(req.params.id);
@@ -233,6 +322,32 @@ router.put('/:id/toggle-status', async (req, res) => {
 
 // @desc    Bulk toggle customer status
 // @route   PUT /api/admin/customers/bulk/toggle-status
+/**
+ * @swagger
+ * /admin/customers/bulk/toggle-status:
+ *   put:
+ *     summary: Toggle multiple customers active status
+ *     tags: [Admin - Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [customerIds, isActive]
+ *             properties:
+ *               customerIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Customers updated successfully
+ */
 router.put('/bulk/toggle-status', async (req, res) => {
   try {
     const { customerIds, isActive } = req.body;
@@ -265,6 +380,46 @@ router.put('/bulk/toggle-status', async (req, res) => {
 
 // @desc    Update customer details (admin override)
 // @route   PUT /api/admin/customers/:id
+/**
+ * @swagger
+ * /admin/customers/{id}:
+ *   put:
+ *     summary: Update customer details (Admin override)
+ *     tags: [Admin - Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               isVerified:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Customer updated successfully
+ *       404:
+ *         description: Customer not found
+ */
 router.put('/:id', async (req, res) => {
   try {
     const { firstName, lastName, email, phone, isActive, isVerified } = req.body;
