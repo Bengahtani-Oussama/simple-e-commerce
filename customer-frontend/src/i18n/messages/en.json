@@ -254,6 +254,86 @@
     "followUs": "Follow Us",
     "allRightsReserved": "All Rights Reserved"
   },
+  "shipping": {
+    "title": "Shipping & Delivery",
+    "subtitle": "Fast, reliable shipping to get your orders delivered on time",
+    "description": "We offer multiple shipping options to ensure your orders arrive quickly and safely. Choose the option that best fits your needs.",
+    "shippingOptions": {
+      "title": "Shipping Options",
+      "standard": {
+        "title": "Standard Shipping",
+        "description": "Delivery within 3-5 business days",
+        "features": [
+          "Free for orders over $50",
+          "Tracking number provided",
+          "Signature not required"
+        ]
+      },
+      "express": {
+        "title": "Express Shipping",
+        "description": "Delivery within 1-2 business days",
+        "features": [
+          "Additional fees apply",
+          "Priority handling",
+          "Real-time tracking"
+        ]
+      },
+      "international": {
+        "title": "International Shipping",
+        "description": "Available to select countries",
+        "features": [
+          "Delivery times vary by location",
+          "Customs fees may apply",
+          "Import duties not included"
+        ]
+      }
+    },
+    "shippingPolicy": {
+      "title": "Shipping Policy",
+      "processing": {
+        "title": "Order Processing",
+        "description": "Orders are typically processed within 1-2 business days after payment confirmation."
+      },
+      "tracking": {
+        "title": "Order Tracking",
+        "description": "Once your order ships, you'll receive a tracking number via email to monitor your package's progress."
+      },
+      "delivery": {
+        "title": "Delivery Information",
+        "description": "Delivery times are estimates and may vary based on your location and shipping method selected."
+      }
+    },
+    "restrictions": {
+      "title": "Shipping Restrictions",
+      "description": "Some items may have shipping restrictions due to size, weight, or destination. We'll notify you if any items in your order cannot be shipped to your location."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "questions": [
+        {
+          "question": "How long does shipping take?",
+          "answer": "Standard shipping takes 3-5 business days, express shipping takes 1-2 business days. International shipping varies by location."
+        },
+        {
+          "question": "Do you offer free shipping?",
+          "answer": "Yes, we offer free standard shipping on orders over $50. Express and international shipping have additional fees."
+        },
+        {
+          "question": "Can I change my shipping address after placing an order?",
+          "answer": "Shipping addresses can be changed within 2 hours of order placement. Please contact our customer service team immediately."
+        },
+        {
+          "question": "What if my package is damaged or lost?",
+          "answer": "If your package arrives damaged, please contact us within 48 hours with photos. For lost packages, we'll work with the carrier to locate it or provide a replacement."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Need Help?",
+      "description": "Have questions about shipping? Our customer service team is here to help.",
+      "contactUs": "Contact Us"
+    }
+  },
   "validation": {
     "required": "This field is required",
     "email": "Invalid email address",
@@ -278,5 +358,244 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm Password"
+  },
+  "about": {
+    "aboutUs": {
+      "title": "About Us",
+      "description": "Welcome to our e-commerce platform, where we strive to provide the best shopping experience with a wide range of high-quality products and exceptional customer service.",
+      "offerings": {
+        "title": "What We Offer",
+        "wideRange": {
+          "title": "Wide Range of Products",
+          "description": "Discover thousands of products across various categories, from electronics to fashion, all curated for quality and value."
+        },
+        "quality": {
+          "title": "Quality Assurance",
+          "description": "We ensure every product meets high standards, providing you with reliable and durable items for your everyday needs."
+        },
+        "prices": {
+          "title": "Competitive Prices",
+          "description": "Enjoy great deals and discounts on our products, making shopping affordable and accessible for everyone."
+        }
+      },
+      "services": {
+        "title": "Our Services",
+        "shipping": {
+          "title": "Fast & Secure Shipping",
+          "description": "We offer fast, reliable shipping options to get your orders to you quickly and safely, with tracking available for peace of mind."
+        },
+        "support": {
+          "title": "24/7 Customer Support",
+          "description": "Our dedicated support team is available around the clock to assist with any questions, returns, or issues you may have."
+        }
+      },
+      "socialMedia": {
+        "title": "Follow Us"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Get in touch with us. We're here to help!",
+    "description": "Have a question, need support, or want to provide feedback? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+    "contactInfo": {
+      "title": "Contact Information",
+      "email": {
+        "title": "Email",
+        "value": "support@example.com"
+      },
+      "phone": {
+        "title": "Phone",
+        "value": "+1 (123) 456-7890"
+      },
+      "address": {
+        "title": "Address",
+        "value": "123 Main Street, City, Country"
+      },
+      "hours": {
+        "title": "Business Hours",
+        "value": "Monday - Friday: 9:00 AM - 6:00 PM"
+      }
+    },
+    "form": {
+      "title": "Send us a Message",
+      "name": "Full Name",
+      "email": "Email Address",
+      "subject": "Subject",
+      "message": "Message",
+      "send": "Send Message",
+      "sending": "Sending...",
+      "success": "Message sent successfully!",
+      "error": "Failed to send message. Please try again."
+    },
+    "socialMedia": {
+      "title": "Follow Us"
+    }
+  },
+  "returns": {
+    "title": "Returns & Exchanges",
+    "subtitle": "Easy returns and exchanges to ensure your satisfaction",
+    "description": "We want you to love your purchase. If you're not completely satisfied, our hassle-free returns and exchanges policy has you covered.",
+    "returnPolicy": {
+      "title": "Return Policy",
+      "description": "We offer a 30-day return window for most items. Items must be in their original condition with tags attached.",
+      "eligibility": {
+        "title": "Eligibility",
+        "items": [
+          "Items must be unused and in original packaging",
+          "Tags and labels must be attached",
+          "Receipt or proof of purchase required",
+          "Returns within 30 days of delivery"
+        ]
+      },
+      "nonReturnable": {
+        "title": "Non-Returnable Items",
+        "items": [
+          "Personal care items",
+          "Custom or personalized products",
+          "Items damaged due to misuse",
+          "Sale or clearance items"
+        ]
+      }
+    },
+    "exchangePolicy": {
+      "title": "Exchange Policy",
+      "description": "Exchanges are available for the same item in a different size, color, or style within 14 days of purchase.",
+      "process": {
+        "title": "Exchange Process",
+        "steps": [
+          "Contact our customer service team",
+          "Provide order number and reason for exchange",
+          "Receive exchange authorization",
+          "Ship the item back using provided label",
+          "Receive your replacement item"
+        ]
+      }
+    },
+    "howToReturn": {
+      "title": "How to Return an Item",
+      "steps": [
+        {
+          "title": "Contact Us",
+          "description": "Reach out to our customer service team via email, phone, or our online form."
+        },
+        {
+          "title": "Get Authorization",
+          "description": "Provide your order details and receive a return authorization number."
+        },
+        {
+          "title": "Package Your Item",
+          "description": "Pack the item securely in its original packaging with all accessories."
+        },
+        {
+          "title": "Ship It Back",
+          "description": "Use the prepaid return label we provide and ship from a post office."
+        },
+        {
+          "title": "Refund Processing",
+          "description": "Once received, we'll process your refund within 3-5 business days."
+        }
+      ]
+    },
+    "refunds": {
+      "title": "Refunds",
+      "description": "Refunds are processed to the original payment method. Processing times vary by payment type.",
+      "methods": {
+        "creditCard": "Credit/Debit Card: 3-5 business days",
+        "paypal": "PayPal: 1-2 business days",
+        "bankTransfer": "Bank Transfer: 5-7 business days"
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "questions": [
+        {
+          "question": "How long do I have to return an item?",
+          "answer": "You have 30 days from the date of delivery to initiate a return for most items."
+        },
+        {
+          "question": "Do I need a receipt to return an item?",
+          "answer": "Yes, you'll need your order number or receipt to process a return. You can find this in your order confirmation email."
+        },
+        {
+          "question": "Are there any restocking fees?",
+          "answer": "We don't charge restocking fees for returns, but customers are responsible for return shipping costs unless the item is defective."
+        },
+        {
+          "question": "Can I exchange an item for a different product?",
+          "answer": "Exchanges are available for the same item in different sizes, colors, or styles. For different products, please return the original and place a new order."
+        },
+        {
+          "question": "What if I received a damaged or defective item?",
+          "answer": "If you receive a damaged or defective item, please contact us immediately. We'll arrange for a replacement or full refund at no cost to you."
+        },
+        {
+          "question": "How do I track my return?",
+          "answer": "Once you ship your return, you'll receive a tracking number. You can also check the status of your return in your account dashboard."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Need Help with a Return?",
+      "description": "Our customer service team is here to assist you with any questions about returns or exchanges.",
+      "contactUs": "Contact Us",
+      "email": "Email: returns@example.com",
+      "phone": "Phone: +1 (123) 456-7890",
+      "hours": "Hours: Monday - Friday, 9 AM - 6 PM"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to common questions about our products and services",
+    "questions": [
+      {
+        "question": "What is your return policy?",
+        "answer": "We offer a 30-day return policy on all items. Items must be in their original condition with tags attached. Please contact our customer service team to initiate a return."
+      },
+      {
+        "question": "How long does shipping take?",
+        "answer": "Standard shipping takes 3-5 business days. Express shipping is available for 1-2 business days at an additional cost. International shipping times vary by location."
+      },
+      {
+        "question": "Do you offer international shipping?",
+        "answer": "Yes, we ship to select international destinations. Shipping costs and delivery times vary by country. Please check our shipping page for more details."
+      },
+      {
+        "question": "How can I track my order?",
+        "answer": "You can track your order using the tracking number provided in your confirmation email. You can also view your order status in your account dashboard."
+      },
+      {
+        "question": "What payment methods do you accept?",
+        "answer": "We accept major credit cards, PayPal, and cash on delivery for select locations. All payments are processed securely."
+      },
+      {
+        "question": "Can I change or cancel my order?",
+        "answer": "Orders can be modified or cancelled within 2 hours of placement. Please contact our customer service team immediately if you need to make changes."
+      },
+      {
+        "question": "Do you offer warranties on products?",
+        "answer": "Most products come with manufacturer warranties. Please check the product description for specific warranty information. We also offer our own satisfaction guarantee."
+      },
+      {
+        "question": "How do I contact customer support?",
+        "answer": "You can reach our customer support team via email at support@example.com, phone at +1 (123) 456-7890, or through our contact form on the website."
+      }
+    ]
+  },
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Explore our wide range of product categories",
+    "description": "Browse through our carefully curated categories to find exactly what you're looking for.",
+    "viewProducts": "View Products",
+    "noCategories": "No categories available",
+    "loading": "Loading categories..."
+  },
+  "brands": {
+    "title": "Brands",
+    "subtitle": "Discover our featured brands",
+    "description": "Explore products from trusted brands that offer quality and reliability.",
+    "viewProducts": "View Products",
+    "noBrands": "No brands available",
+    "loading": "Loading brands..."
   }
 }

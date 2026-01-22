@@ -1,0 +1,389 @@
+import express from 'express';
+import {
+  getSections,
+  getPublicSections,
+  getSection,
+  createSection,
+  updateSection,
+  deleteSection,
+  addProductsToSection,
+  removeProductFromSection,
+  cleanOutOfStockProducts,
+  cleanAllSectionsStock,
+} from '../controllers/sectionController';
+import { protect, isAdmin } from '../middleware/authMiddleware';
+
+const router = express.Router();
+
+// ============================================
+// PUBLIC ROUTES (No authentication required)
+// ============================================
+
+/**
+ * @swagger
+ * /sections/public:
+ *   get:
+ *     summary: Get all active sections with in-stock products (Public)
+ *     tags: [Sections - Public]
+ *     description: Returns only active sections that have the minimum required number of products in stock
+ *     responses:
+ *       200:
+ *         description: Active sections retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 count:
+ *                   type: number
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       name:
+ *                         type: object
+ *                         properties:
+ *                           ar:
+ *                             type: string
+ *                           en:
+ *                             type: string
+ *                           fr:
+ *                             type: string
+ *                       products:
+ *                         type: array
+ *                       activeProductCount:
+ *                         type: number
+ */
+router.get('/public', getPublicSections);
+
+/**
+ * @swagger
+ * /sections/{id}:
+ *   get:
+ *     summary: Get section by ID (Public)
+ *     tags: [Sections - Public]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Section ID
+ *     responses:
+ *       200:
+ *         description: Section retrieved successfully
+ *       404:
+ *         description: Section not found
+ */
+router.get('/:id', getSection);
+
+// ============================================
+// ADMIN ROUTES (Authentication required)
+// ============================================
+
+router.use(protect, isAdmin); // All routes below require admin authentication
+
+/**
+ * @swagger
+ * /sections:
+ *   get:
+ *     summary: Get all sections with filters (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: active
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Sections retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ */
+router.get('/', getSections);
+
+/**
+ * @swagger
+ * /sections:
+ *   post:
+ *     summary: Create new section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - products
+ *             properties:
+ *               name:
+ *                 type: object
+ *                 required:
+ *                   - ar
+ *                   - en
+ *                   - fr
+ *                 properties:
+ *                   ar:
+ *                     type: string
+ *                     example: "عروض الصيف"
+ *                   en:
+ *                     type: string
+ *                     example: "Summer Offers"
+ *                   fr:
+ *                     type: string
+ *                     example: "Offres d'été"
+ *               description:
+ *                 type: object
+ *                 properties:
+ *                   ar:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *                   fr:
+ *                     type: string
+ *               products:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 5
+ *                 description: Array of product IDs (minimum 5)
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
+ *               order:
+ *                 type: number
+ *                 default: 0
+ *               minProducts:
+ *                 type: number
+ *                 default: 5
+ *     responses:
+ *       201:
+ *         description: Section created successfully
+ *       400:
+ *         description: Invalid input or insufficient products
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/', createSection);
+
+/**
+ * @swagger
+ * /sections/{id}:
+ *   put:
+ *     summary: Update section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: object
+ *                 properties:
+ *                   ar:
+ *                     type: string
+ *                   en:
+ *                     type: string
+ *                   fr:
+ *                     type: string
+ *               description:
+ *                 type: object
+ *               products:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               isActive:
+ *                 type: boolean
+ *               order:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Section updated successfully
+ *       404:
+ *         description: Section not found
+ */
+router.put('/:id', updateSection);
+
+/**
+ * @swagger
+ * /sections/{id}:
+ *   delete:
+ *     summary: Delete section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Section deleted successfully
+ *       404:
+ *         description: Section not found
+ */
+router.delete('/:id', deleteSection);
+
+/**
+ * @swagger
+ * /sections/{id}/products:
+ *   post:
+ *     summary: Add products to section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productIds
+ *             properties:
+ *               productIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of product IDs to add
+ *     responses:
+ *       200:
+ *         description: Products added successfully
+ *       400:
+ *         description: Invalid product IDs or out of stock
+ *       404:
+ *         description: Section not found
+ */
+router.post('/:id/products', addProductsToSection);
+
+/**
+ * @swagger
+ * /sections/{id}/products/{productId}:
+ *   delete:
+ *     summary: Remove product from section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Section ID
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID to remove
+ *     responses:
+ *       200:
+ *         description: Product removed successfully
+ *       400:
+ *         description: Cannot remove - would violate minimum products requirement
+ *       404:
+ *         description: Section or product not found
+ */
+router.delete('/:id/products/:productId', removeProductFromSection);
+
+/**
+ * @swagger
+ * /sections/{id}/clean-stock:
+ *   post:
+ *     summary: Remove out-of-stock products from section (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Out-of-stock products removed successfully
+ *       400:
+ *         description: Cannot clean - would violate minimum products requirement
+ *       404:
+ *         description: Section not found
+ */
+router.post('/:id/clean-stock', cleanOutOfStockProducts);
+
+/**
+ * @swagger
+ * /sections/clean-all-stock:
+ *   post:
+ *     summary: Remove out-of-stock products from all sections (Admin)
+ *     tags: [Sections - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Bulk operation to clean out-of-stock products from all active sections
+ *     responses:
+ *       200:
+ *         description: All sections cleaned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalCleaned:
+ *                       type: number
+ *                     sectionsProcessed:
+ *                       type: number
+ *                     details:
+ *                       type: array
+ */
+router.post('/clean-all-stock', cleanAllSectionsStock);
+
+export default router;

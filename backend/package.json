@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "seed:admin": "ts-node src/scripts/seedAdmin.ts",
     "seed:all": "ts-node src/scripts/seedDatabase.ts",
-    "seed:full": "ts-node src/scripts/seedDatabase.ts"
+    "seed:sections": "ts-node src/scripts/seedSections.ts",
+    "seed:full": "ts-node src/scripts/seedDatabase.ts && ts-node src/scripts/seedSections.ts"
   },
   "keywords": [
     "ecommerce",
