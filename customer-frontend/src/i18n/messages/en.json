@@ -154,7 +154,46 @@
     "noOrders": "No orders yet",
     "orderDetails": "Order Details",
     "shippingAddress": "Shipping Address",
-    "trackingNumber": "Tracking Number"
+    "trackingNumber": "Tracking Number",
+    "fetchError": "Failed to load order details",
+    "cancelSuccess": "Order cancelled successfully",
+    "cancelError": "Failed to cancel order",
+    "couponApplied": "Coupon applied successfully",
+    "couponApplyError": "Failed to apply coupon",
+    "notFound": "Order not found",
+    "notFoundDesc": "The order you're looking for doesn't exist",
+    "backToOrders": "Back to Orders",
+    "orderStatus": "Order Status",
+    "orderItems": "Order Items",
+    "notes": "Notes",
+    "customerNote": "Customer Note",
+    "adminNote": "Admin Note",
+    "paymentInfo": "Payment Information",
+    "paymentMethod": "Payment Method",
+    "paymentStatus": "Payment Status",
+    "paymentStatuses": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded"
+    },
+    "shippingInfo": "Shipping Information",
+    "shippingMethod": "Shipping Method",
+    "shippingMethods": {
+      "home_delivery": "Home Delivery",
+      "office_pickup": "Office Pickup"
+    },
+    "orderSummary": "Order Summary",
+    "couponDiscount": "Coupon Discount",
+    "shipping": "Shipping",
+    "paymentMethods":{
+      "cash_on_delivery": "Cash on Delivery",
+      "office_pickup": "Office Pickup"
+    },
+    "subtotal": "Subtotal",
+    "estimatedDelivery": "Estimated Delivery",
+    "cancelConfirmTitle": "Cancel Order",
+    "cancelConfirmDesc": "Are you sure you want to cancel this order? This action cannot be undone."
   },
   "addresses": {
     "title": "Addresses",
@@ -167,10 +206,18 @@
     "phone": "Phone",
     "wilaya": "Wilaya",
     "commune": "Commune",
+    "isDefault": "Default",
     "addressLine": "Address",
     "postalCode": "Postal Code",
     "saveAddress": "Save Address",
-    "noAddresses": "No saved addresses"
+    "addAddress": "Add Address",
+    "noAddresses": "No saved addresses",
+    "confirmDelete": "Are you sure you want to delete this address?",
+    "addressDeleted": "Address deleted successfully",
+    "deleteFailed": "Failed to delete address",
+    "manageAddresses": "Manage your addresses",
+    "noAddressesDescription": "You haven't added any addresses yet",
+    "addFirstAddress": "Add your first address"
   },
   "auth": {
     "login": "Login",
@@ -188,7 +235,10 @@
     "enterPassword": "Enter your password",
     "createAccount": "Create New Account",
     "welcome": "Welcome",
-    "welcomeBack": "Welcome Back"
+    "welcomeBack": "Welcome Back",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phone": "Phone"
   },
   "footer": {
     "about": "About Us",
@@ -211,5 +261,22 @@
     "maxLength": "Must not exceed {max} characters",
     "passwordMatch": "Passwords do not match",
     "phone": "Invalid phone number"
+  },
+  "profile": {
+    "updated": "Updated",
+    "personalInfoUpdated": "Personal information updated successfully",
+    "updateFailed": "Failed to update profile",
+    "passwordMismatch": "Passwords do not match",
+    "passwordChanged": "Password changed",
+    "passwordChangeSuccess": "Password changed successfully",
+    "passwordChangeFailed": "Failed to change password",
+    "manageAccount": "Manage your account",
+    "personalInfo": "Personal Information",
+    "security": "Security",
+    "saveChanges": "Save Changes",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password"
   }
 }

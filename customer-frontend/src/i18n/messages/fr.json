@@ -154,7 +154,46 @@
     "noOrders": "Aucune commande",
     "orderDetails": "Détails de la Commande",
     "shippingAddress": "Adresse de Livraison",
-    "trackingNumber": "Numéro de Suivi"
+    "trackingNumber": "Numéro de Suivi",
+    "fetchError": "Échec du chargement des détails de la commande",
+    "cancelSuccess": "Commande annulée avec succès",
+    "cancelError": "Échec de l'annulation de la commande",
+    "couponApplied": "Coupon appliqué avec succès",
+    "couponApplyError": "Échec de l'application du coupon",
+    "notFound": "Commande introuvable",
+    "notFoundDesc": "La commande que vous recherchez n'existe pas",
+    "backToOrders": "Retour aux Commandes",
+    "orderStatus": "Statut de la Commande",
+    "orderItems": "Articles de la Commande",
+    "notes": "Notes",
+    "customerNote": "Note du Client",
+    "adminNote": "Note de l'Admin",
+    "paymentInfo": "Informations de Paiement",
+    "paymentMethod": "Mode de Paiement",
+    "paymentStatus": "Statut du Paiement",
+    "paymentStatuses": {
+      "pending": "En Attente",
+      "paid": "Payé",
+      "failed": "Échec",
+      "refunded": "Remboursé"
+    },
+    "shippingInfo": "Informations de Livraison",
+    "shippingMethod": "Mode de Livraison",
+    "shippingMethods": {
+      "home_delivery": "Livraison à Domicile",
+      "office_pickup": "Retrait au Bureau"
+    },
+    "orderSummary": "Résumé de la Commande",
+    "couponDiscount": "Remise Promo",
+    "shipping": "Livraison",
+    "paymentMethods":{
+      "cash_on_delivery": "Paiement à la Livraison",
+      "office_pickup": "Retrait au Bureau"
+    },
+    "subtotal": "Sous-total",
+    "estimatedDelivery": "Livraison Estimée",
+    "cancelConfirmTitle": "Annuler la Commande",
+    "cancelConfirmDesc": "Êtes-vous sûr de vouloir annuler cette commande ? Cette action ne peut pas être annulée."
   },
   "addresses": {
     "title": "Adresses",
@@ -168,9 +207,17 @@
     "wilaya": "Wilaya",
     "commune": "Commune",
     "addressLine": "Adresse",
+    "isDefault": "Par Défaut",
     "postalCode": "Code Postal",
     "saveAddress": "Enregistrer l'Adresse",
-    "noAddresses": "Aucune adresse enregistrée"
+    "noAddresses": "Aucune adresse enregistrée",
+    "addAddress": "Ajouter une Adresse",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette adresse ?",
+    "addressDeleted": "Adresse supprimée avec succès",
+    "deleteFailed": "Échec de la suppression de l'adresse",
+    "manageAddresses": "Gérer vos adresses",
+    "noAddressesDescription": "Vous n'avez encore ajouté aucune adresse",
+    "addFirstAddress": "Ajoutez votre première adresse"
   },
   "auth": {
     "login": "Connexion",
@@ -188,7 +235,11 @@
     "enterPassword": "Entrez votre mot de passe",
     "createAccount": "Créer un Nouveau Compte",
     "welcome": "Bienvenue",
-    "welcomeBack": "Bon Retour"
+    "welcomeBack": "Bon Retour",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "confirmPassword": "Confirmer le Mot de Passe",
+    "phone": "Téléphone"
   },
   "footer": {
     "about": "À Propos",
@@ -211,5 +262,22 @@
     "maxLength": "Ne doit pas dépasser {max} caractères",
     "passwordMatch": "Les mots de passe ne correspondent pas",
     "phone": "Numéro de téléphone invalide"
+  },
+  "profile": {
+    "updated": "Mis à jour",
+    "personalInfoUpdated": "Informations personnelles mises à jour avec succès",
+    "updateFailed": "Échec de la mise à jour du profil",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordChanged": "Mot de passe changé",
+    "passwordChangeSuccess": "Mot de passe changé avec succès",
+    "passwordChangeFailed": "Échec du changement de mot de passe",
+    "manageAccount": "Gérer votre compte",
+    "personalInfo": "Informations Personnelles",
+    "security": "Sécurité",
+    "saveChanges": "Enregistrer les Modifications",
+    "changePassword": "Changer le Mot de Passe",
+    "currentPassword": "Mot de Passe Actuel",
+    "newPassword": "Nouveau Mot de Passe",
+    "confirmPassword": "Confirmer le Mot de Passe"
   }
 }

@@ -12,6 +12,8 @@ interface AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+  changePassword: (data: ChangePasswordData) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
@@ -21,6 +23,12 @@ interface RegisterData {
   email: string;
   password: string;
   phone?: string;
+}
+
+interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -71,6 +79,29 @@ export const useAuthStore = create<AuthState>()(
 
       updateUser: (user: User) => {
         set({ user });
+      },
+
+      updateProfile: async (data: Partial<User>) => {
+        set({ isLoading: true });
+        try {
+          const response = await api.put('/users/profile', data);
+          const updatedUser = response.data.data.user;
+          set({ user: updatedUser, isLoading: false });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      changePassword: async (data: ChangePasswordData) => {
+        set({ isLoading: true });
+        try {
+          await api.put('/auth/change-password', data);
+          set({ isLoading: false });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
       },
 
       checkAuth: async () => {

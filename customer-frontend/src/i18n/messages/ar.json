@@ -106,7 +106,14 @@
     "orderSummary": "ملخص الطلب",
     "placeOrder": "تأكيد الطلب",
     "customerNote": "ملاحظات (اختياري)",
-    "required": "مطلوب"
+    "required": "مطلوب",
+    "couponCode": "رمز القسيمة",
+    "enterCoupon": "أدخل رمز القسيمة",
+    "applyCoupon": "تطبيق",
+    "removeCoupon": "إزالة",
+    "couponApplied": "تم تطبيق القسيمة بنجاح",
+    "invalidCoupon": "رمز القسيمة غير صحيح",
+    "couponDiscount": "خصم القسيمة"
   },
   "account": {
     "title": "حسابي",
@@ -147,7 +154,46 @@
     "noOrders": "لا توجد طلبات",
     "orderDetails": "تفاصيل الطلب",
     "shippingAddress": "عنوان الشحن",
-    "trackingNumber": "رقم التتبع"
+    "trackingNumber": "رقم التتبع",
+    "fetchError": "فشل في تحميل تفاصيل الطلب",
+    "cancelSuccess": "تم إلغاء الطلب بنجاح",
+    "cancelError": "فشل في إلغاء الطلب",
+    "couponApplied": "تم تطبيق القسيمة بنجاح",
+    "couponApplyError": "فشل في تطبيق القسيمة",
+    "notFound": "الطلب غير موجود",
+    "notFoundDesc": "الطلب الذي تبحث عنه غير موجود",
+    "backToOrders": "العودة إلى الطلبات",
+    "orderStatus": "حالة الطلب",
+    "orderItems": "عناصر الطلب",
+    "notes": "ملاحظات",
+    "customerNote": "ملاحظة العميل",
+    "adminNote": "ملاحظة الإدارة",
+    "paymentInfo": "معلومات الدفع",
+    "paymentMethod": "طريقة الدفع",
+    "paymentStatus": "حالة الدفع",
+    "paymentStatuses": {
+      "pending": "قيد الانتظار",
+      "paid": "مدفوع",
+      "failed": "فشل",
+      "refunded": "مسترد"
+    },
+    "shippingInfo": "معلومات الشحن",
+    "shippingMethod": "طريقة الشحن",
+    "shippingMethods": {
+      "home_delivery": "توصيل للمنزل",
+      "office_pickup": "استلام من المكتب"
+    },
+    "orderSummary": "ملخص الطلب",
+    "couponDiscount": "خصم القسيمة",
+    "shipping": "التوصيل",
+    "paymentMethods":{
+      "cash_on_delivery": "الدفع عند الاستلام",
+      "office_pickup": "استلام من المكتب"
+    },
+    "subtotal": "المجموع الفرعي",
+    "estimatedDelivery": "التوصيل المتوقع",
+    "cancelConfirmTitle": "إلغاء الطلب",
+    "cancelConfirmDesc": "هل أنت متأكد من إلغاء هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء."
   },
   "addresses": {
     "title": "العناوين",
@@ -162,8 +208,16 @@
     "commune": "البلدية",
     "addressLine": "العنوان",
     "postalCode": "الرمز البريدي",
+    "addAddress": "اضافة عنوان",
+    "isDefault": "افتراضي",
     "saveAddress": "حفظ العنوان",
-    "noAddresses": "لا توجد عناوين محفوظة"
+    "noAddresses": "لا توجد عناوين محفوظة",
+    "confirmDelete": "هل أنت متأكد من حذف هذا العنوان؟",
+    "addressDeleted": "تم حذف العنوان بنجاح",
+    "deleteFailed": "فشل في حذف العنوان",
+    "manageAddresses": "إدارة عناوينك",
+    "noAddressesDescription": "لم تقم بإضافة أي عناوين بعد",
+    "addFirstAddress": "أضف عنوانك الأول"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -181,7 +235,11 @@
     "enterPassword": "أدخل كلمة المرور",
     "createAccount": "إنشاء حساب جديد",
     "welcome": "مرحباً بك",
-    "welcomeBack": "مرحباً بعودتك"
+    "welcomeBack": "مرحباً بعودتك",
+    "firstName": "الاسم الاول",
+    "lastName": "الاسم الاخير",
+    "confirmPassword": "تاكيد كلمة المرور",
+    "phone": "رقم الهاتف"
   },
   "footer": {
     "about": "من نحن",
@@ -204,5 +262,22 @@
     "maxLength": "يجب أن لا يتجاوز {max} حرف",
     "passwordMatch": "كلمات المرور غير متطابقة",
     "phone": "رقم الهاتف غير صحيح"
+  },
+  "profile": {
+    "updated": "تم التحديث",
+    "personalInfoUpdated": "تم تحديث المعلومات الشخصية بنجاح",
+    "updateFailed": "فشل في تحديث الملف الشخصي",
+    "passwordMismatch": "كلمات المرور غير متطابقة",
+    "passwordChanged": "تم تغيير كلمة المرور",
+    "passwordChangeSuccess": "تم تغيير كلمة المرور بنجاح",
+    "passwordChangeFailed": "فشل في تغيير كلمة المرور",
+    "manageAccount": "إدارة حسابك",
+    "personalInfo": "المعلومات الشخصية",
+    "security": "الأمان",
+    "saveChanges": "حفظ التغييرات",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور"
   }
 }

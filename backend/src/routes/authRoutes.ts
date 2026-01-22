@@ -6,6 +6,7 @@ import {
   logout,
   forgotPassword,
   resetPassword,
+  changePassword,
   getMe,
 } from '../controllers/authController';
 import { protect, isCustomer } from '../middleware/authMiddleware';
@@ -177,6 +178,8 @@ router.post('/logout', protect, isCustomer, logout);
  *       401:
  *         description: Unauthorized
  */
+router.put('/change-password', protect, isCustomer, changePassword);
+
 router.get('/me', protect, isCustomer, getMe);
 
 export default router;

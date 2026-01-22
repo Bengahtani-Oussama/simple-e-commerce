@@ -52,6 +52,10 @@ export default function CheckoutPage() {
     fetchAddresses();
   }, [isAuthenticated, cart]);
 
+  useEffect(() => {
+    setShippingCost(shippingMethod === 'home_delivery' ? 500 : 300);
+  }, [shippingMethod]);
+
   const fetchAddresses = async () => {
     try {
       const response = await api.get('/users/addresses');
@@ -366,7 +370,7 @@ const handlePlaceOrder = async () => {
 
             <div className="flex justify-between text-lg font-bold">
               <span>{t('cart.total')}</span>
-              <span className="text-primary">{formatPrice(total + shippingCost - couponDiscount, locale)}</span>
+              <span className="text-primary">{formatPrice(total, locale)}</span>
             </div>
 
             {/* Payment Method */}
