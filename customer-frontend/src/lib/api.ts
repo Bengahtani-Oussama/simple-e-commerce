@@ -59,6 +59,22 @@ api.interceptors.response.use(
 
 export default api;
 
+// Category API functions
+export const categoryApi = {
+  getAll: async () => {
+    const response = await api.get('/categories');
+    return response.data;
+  },
+};
+
+// Brand API functions
+export const brandApi = {
+  getAll: async () => {
+    const response = await api.get('/brands');
+    return response.data;
+  },
+};
+
 // Helper function to handle API errors
 export function handleApiError(error: any): string {
   if (error.response?.data?.message) {

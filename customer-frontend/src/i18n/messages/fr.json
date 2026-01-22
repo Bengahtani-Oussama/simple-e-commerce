@@ -186,7 +186,7 @@
     "orderSummary": "Résumé de la Commande",
     "couponDiscount": "Remise Promo",
     "shipping": "Livraison",
-    "paymentMethods":{
+    "paymentMethods": {
       "cash_on_delivery": "Paiement à la Livraison",
       "office_pickup": "Retrait au Bureau"
     },
@@ -279,5 +279,327 @@
     "currentPassword": "Mot de Passe Actuel",
     "newPassword": "Nouveau Mot de Passe",
     "confirmPassword": "Confirmer le Mot de Passe"
+  },
+  "shipping": {
+    "title": "Livraison & Expédition",
+    "subtitle": "Une livraison rapide et fiable pour recevoir vos commandes à temps",
+    "description": "Nous proposons plusieurs options de livraison afin que vos commandes arrivent rapidement et en toute sécurité. Choisissez l’option qui correspond le mieux à vos besoins.",
+    "shippingOptions": {
+      "title": "Options de livraison",
+      "standard": {
+        "title": "Livraison standard",
+        "description": "Livraison sous 3 à 5 jours ouvrables",
+        "features": [
+          "Gratuite pour les commandes de plus de 50 $",
+          "Numéro de suivi fourni",
+          "Signature non requise"
+        ]
+      },
+      "express": {
+        "title": "Livraison express",
+        "description": "Livraison sous 1 à 2 jours ouvrables",
+        "features": [
+          "Frais supplémentaires applicables",
+          "Traitement prioritaire",
+          "Suivi en temps réel"
+        ]
+      },
+      "international": {
+        "title": "Livraison internationale",
+        "description": "Disponible dans certains pays",
+        "features": [
+          "Les délais varient selon la destination",
+          "Des frais de douane peuvent s’appliquer",
+          "Les droits d’importation ne sont pas inclus"
+        ]
+      }
+    },
+    "shippingPolicy": {
+      "title": "Politique de livraison",
+      "processing": {
+        "title": "Traitement des commandes",
+        "description": "Les commandes sont généralement traitées sous 1 à 2 jours ouvrables après confirmation du paiement."
+      },
+      "tracking": {
+        "title": "Suivi de commande",
+        "description": "Une fois votre commande expédiée, vous recevrez un numéro de suivi par e-mail pour suivre l’acheminement de votre colis."
+      },
+      "delivery": {
+        "title": "Informations de livraison",
+        "description": "Les délais de livraison sont estimatifs et peuvent varier selon votre localisation et le mode de livraison choisi."
+      }
+    },
+    "restrictions": {
+      "title": "Restrictions de livraison",
+      "description": "Certains articles peuvent être soumis à des restrictions de livraison en raison de leur taille, poids ou destination. Nous vous informerons si un article ne peut pas être livré à votre adresse."
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "questions": [
+        {
+          "question": "Combien de temps prend la livraison ?",
+          "answer": "La livraison standard prend 3 à 5 jours ouvrables, la livraison express 1 à 2 jours ouvrables. La livraison internationale varie selon la destination."
+        },
+        {
+          "question": "Proposez-vous la livraison gratuite ?",
+          "answer": "Oui, la livraison standard est gratuite pour les commandes de plus de 50 $. La livraison express et internationale entraîne des frais supplémentaires."
+        },
+        {
+          "question": "Puis-je modifier mon adresse de livraison après avoir passé commande ?",
+          "answer": "L’adresse de livraison peut être modifiée dans les 2 heures suivant la commande. Veuillez contacter immédiatement notre service client."
+        },
+        {
+          "question": "Que faire si mon colis est endommagé ou perdu ?",
+          "answer": "Si votre colis arrive endommagé, contactez-nous dans les 48 heures avec des photos. En cas de perte, nous travaillerons avec le transporteur pour le localiser ou fournir un remplacement."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Besoin d’aide ?",
+      "description": "Des questions concernant la livraison ? Notre service client est là pour vous aider.",
+      "contactUs": "Nous contacter"
+    }
+  },
+
+  "about": {
+    "aboutUs": {
+      "title": "À Propos de Nous",
+      "description": "Bienvenue sur notre plateforme de commerce électronique, où nous nous efforçons de fournir la meilleure expérience d'achat avec une large gamme de produits de haute qualité et un service client exceptionnel.",
+      "offerings": {
+        "title": "Ce Que Nous Offrons",
+        "wideRange": {
+          "title": "Large Gamme de Produits",
+          "description": "Découvrez des milliers de produits dans diverses catégories, des électroniques à la mode, tous sélectionnés pour leur qualité et leur valeur."
+        },
+        "quality": {
+          "title": "Assurance Qualité",
+          "description": "Nous garantissons que chaque produit répond à des normes élevées, vous fournissant des articles fiables et durables pour vos besoins quotidiens."
+        },
+        "prices": {
+          "title": "Prix Compétitifs",
+          "description": "Profitez de super offres et de remises sur nos produits, rendant les achats abordables et accessibles à tous."
+        }
+      },
+      "services": {
+        "title": "Nos Services",
+        "shipping": {
+          "title": "Livraison Rapide et Sécurisée",
+          "description": "Nous proposons des options de livraison rapides et fiables pour livrer vos commandes rapidement et en toute sécurité, avec suivi disponible pour la tranquillité d'esprit."
+        },
+        "support": {
+          "title": "Support Client 24/7",
+          "description": "Notre équipe de support dédiée est disponible 24 heures sur 24 pour vous aider avec toutes vos questions, retours ou problèmes que vous pourriez rencontrer."
+        }
+      },
+      "socialMedia": {
+        "title": "Suivez-nous"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Entrez en contact avec nous. Nous sommes là pour aider!",
+    "description": "Vous avez une question, besoin d'aide, ou voulez donner votre avis ? Nous aimerions avoir de vos nouvelles. Envoyez-nous un message et nous vous répondrons dès que possible.",
+    "contactInfo": {
+      "title": "Informations de Contact",
+      "email": {
+        "title": "Email",
+        "value": "support@example.com"
+      },
+      "phone": {
+        "title": "Téléphone",
+        "value": "+1 (123) 456-7890"
+      },
+      "address": {
+        "title": "Adresse",
+        "value": "123 Rue Principale, Ville, Pays"
+      },
+      "hours": {
+        "title": "Heures d'Ouverture",
+        "value": "Lundi - Vendredi : 9h00 - 18h00"
+      }
+    },
+    "form": {
+      "title": "Envoyez-nous un Message",
+      "name": "Nom Complet",
+      "email": "Adresse Email",
+      "subject": "Sujet",
+      "message": "Message",
+      "send": "Envoyer le Message",
+      "sending": "Envoi en cours...",
+      "success": "Message envoyé avec succès !",
+      "error": "Échec de l'envoi du message. Veuillez réessayer."
+    },
+    "socialMedia": {
+      "title": "Suivez-nous"
+    }
+  },
+  "returns": {
+    "title": "Retours et Échanges",
+    "subtitle": "Retours et échanges faciles pour assurer votre satisfaction",
+    "description": "Nous voulons que vous aimiez votre achat. Si vous n'êtes pas complètement satisfait, notre politique de retours et échanges sans tracas vous couvre.",
+    "returnPolicy": {
+      "title": "Politique de Retour",
+      "description": "Nous offrons une fenêtre de retour de 30 jours pour la plupart des articles. Les articles doivent être dans leur état d'origine avec les étiquettes attachées.",
+      "eligibility": {
+        "title": "Admissibilité",
+        "items": [
+          "Les articles doivent être inutilisés et dans leur emballage d'origine",
+          "Les étiquettes et les tags doivent être attachés",
+          "Reçu ou preuve d'achat requis",
+          "Retours dans les 30 jours de livraison"
+        ]
+      },
+      "nonReturnable": {
+        "title": "Articles Non Retournables",
+        "items": [
+          "Articles de soins personnels",
+          "Produits personnalisés ou sur mesure",
+          "Articles endommagés par une mauvaise utilisation",
+          "Articles soldés ou en promotion"
+        ]
+      }
+    },
+    "exchangePolicy": {
+      "title": "Politique d'Échange",
+      "description": "Les échanges sont disponibles pour le même article dans une taille, couleur ou style différent dans les 14 jours suivant l'achat.",
+      "process": {
+        "title": "Processus d'Échange",
+        "steps": [
+          "Contactez notre équipe de service client",
+          "Fournissez les détails de votre commande et la raison de l'échange",
+          "Recevez une autorisation d'échange",
+          "Expédiez l'article en utilisant l'étiquette fournie",
+          "Recevez votre article de remplacement"
+        ]
+      }
+    },
+    "howToReturn": {
+      "title": "Comment Retourner un Article",
+      "steps": [
+        {
+          "title": "Contactez-Nous",
+          "description": "Contactez notre équipe de service client par email, téléphone ou notre formulaire en ligne."
+        },
+        {
+          "title": "Obtenir une Autorisation",
+          "description": "Fournissez les détails de votre commande et recevez un numéro d'autorisation de retour."
+        },
+        {
+          "title": "Emballer Votre Article",
+          "description": "Emballez l'article solidement dans son emballage d'origine avec tous les accessoires."
+        },
+        {
+          "title": "Expédier",
+          "description": "Utilisez l'étiquette de retour prépayée que nous fournissons et expédiez depuis un bureau de poste."
+        },
+        {
+          "title": "Traitement du Remboursement",
+          "description": "Une fois reçu, nous traiterons votre remboursement dans les 3-5 jours ouvrables."
+        }
+      ]
+    },
+    "refunds": {
+      "title": "Remboursements",
+      "description": "Les remboursements sont traités vers la méthode de paiement originale. Les délais de traitement varient selon le type de paiement.",
+      "methods": {
+        "creditCard": "Carte de Crédit/Débit : 3-5 jours ouvrables",
+        "paypal": "PayPal : 1-2 jours ouvrables",
+        "bankTransfer": "Virement Bancaire : 5-7 jours ouvrables"
+      }
+    },
+    "faq": {
+      "title": "Questions Fréquemment Posées",
+      "questions": [
+        {
+          "question": "Combien de temps ai-je pour retourner un article ?",
+          "answer": "Vous avez 30 jours à compter de la date de livraison pour initier un retour pour la plupart des articles."
+        },
+        {
+          "question": "Ai-je besoin d'un reçu pour retourner un article ?",
+          "answer": "Oui, vous aurez besoin de votre numéro de commande ou de votre reçu pour traiter un retour. Vous pouvez le trouver dans votre email de confirmation de commande."
+        },
+        {
+          "question": "Y a-t-il des frais de restockage ?",
+          "answer": "Nous ne facturons pas de frais de restockage pour les retours, mais les clients sont responsables des frais de retour à moins que l'article ne soit défectueux."
+        },
+        {
+          "question": "Puis-je échanger un article contre un produit différent ?",
+          "answer": "Les échanges sont disponibles pour le même article dans des tailles, couleurs ou styles différents. Pour des produits différents, veuillez retourner l'original et passer une nouvelle commande."
+        },
+        {
+          "question": "Que faire si j'ai reçu un article endommagé ou défectueux ?",
+          "answer": "Si vous recevez un article endommagé ou défectueux, contactez-nous immédiatement. Nous organiserons un remplacement ou un remboursement complet à vos frais."
+        },
+        {
+          "question": "Comment suivre mon retour ?",
+          "answer": "Une fois que vous avez expédié votre retour, vous recevrez un numéro de suivi. Vous pouvez également vérifier le statut de votre retour dans votre tableau de bord de compte."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Besoin d'Aide avec un Retour ?",
+      "description": "Notre équipe de service client est là pour vous aider avec toutes vos questions sur les retours et échanges.",
+      "contactUs": "Contactez-Nous",
+      "email": "Email : returns@example.com",
+      "phone": "Téléphone : +1 (123) 456-7890",
+      "hours": "Heures : Lundi - Vendredi, 9h - 18h"
+    }
+  },
+  "faq": {
+    "title": "Questions Fréquemment Posées",
+    "subtitle": "Trouvez des réponses aux questions courantes sur nos produits et services",
+    "questions": [
+      {
+        "question": "Quelle est votre politique de retour ?",
+        "answer": "Nous offrons une politique de retour de 30 jours sur tous les produits. Les articles doivent être dans leur état d'origine avec les étiquettes attachées. Veuillez contacter notre équipe de service client pour initier un retour."
+      },
+      {
+        "question": "Combien de temps prend la livraison ?",
+        "answer": "La livraison standard prend 3-5 jours ouvrables. La livraison express est disponible pour 1-2 jours ouvrables avec des frais supplémentaires. Les délais de livraison internationale varient selon la destination."
+      },
+      {
+        "question": "Offrez-vous la livraison internationale ?",
+        "answer": "Oui, nous livrons vers des destinations internationales sélectionnées. Les coûts de livraison et les délais de livraison varient selon le pays. Veuillez consulter notre page de livraison pour plus de détails."
+      },
+      {
+        "question": "Comment puis-je suivre ma commande ?",
+        "answer": "Vous pouvez suivre votre commande en utilisant le numéro de suivi fourni dans votre email de confirmation. Vous pouvez également consulter le statut de votre commande dans votre tableau de bord de compte."
+      },
+      {
+        "question": "Quels modes de paiement acceptez-vous ?",
+        "answer": "Nous acceptons les principales cartes de crédit, PayPal, et le paiement à la livraison pour certains emplacements. Tous les paiements sont traités en toute sécurité."
+      },
+      {
+        "question": "Puis-je modifier ou annuler ma commande ?",
+        "answer": "Les commandes peuvent être modifiées ou annulées dans les 2 heures suivant la soumission. Veuillez contacter immédiatement notre équipe de service client si vous devez apporter des modifications."
+      },
+      {
+        "question": "Offrez-vous des garanties sur les produits ?",
+        "answer": "La plupart des produits sont accompagnés de garanties du fabricant. Veuillez vérifier la description du produit pour les informations de garantie spécifiques. Nous offrons également notre propre garantie de satisfaction."
+      },
+      {
+        "question": "Comment contacter le service client ?",
+        "answer": "Vous pouvez joindre notre équipe de service client par email à support@example.com, par téléphone au +1 (123) 456-7890, ou via le formulaire de contact sur le site web."
+      }
+    ],
+    "stillHaveQuestions": "Vous avez d'autres questions ?",
+    "contactUs": "Contactez-nous pour plus d'aide."
+  },
+  "categories": {
+    "title": "Catégories",
+    "subtitle": "Explorez notre large gamme de catégories de produits",
+    "description": "Parcourez nos catégories soigneusement sélectionnées pour trouver exactement ce que vous cherchez.",
+    "viewProducts": "Voir les Produits",
+    "noCategories": "Aucune catégorie disponible",
+    "loading": "Chargement des catégories..."
+  },
+  "brands": {
+    "title": "Marques",
+    "subtitle": "Découvrez nos marques vedettes",
+    "description": "Explorez les produits de marques de confiance qui offrent qualité et fiabilité.",
+    "viewProducts": "Voir les Produits",
+    "noBrands": "Aucune marque disponible",
+    "loading": "Chargement des marques..."
   }
 }

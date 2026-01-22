@@ -51,6 +51,28 @@ const productNames = [
   { ar: 'ماوس لاسلكي', en: 'Wireless Mouse', fr: 'Souris Sans Fil' },
   { ar: 'لوحة مفاتيح ميكانيكية', en: 'Mechanical Keyboard', fr: 'Clavier Mécanique' },
   { ar: 'حزام جلدي', en: 'Leather Belt', fr: 'Ceinture en Cuir' },
+  { ar: 'بوستر لاسلكي', en: 'Wireless Charger', fr: 'Chargeur Sans Fil' },
+  { ar: 'تلفزيون', en: 'TV', fr: 'TV' },
+  { ar: 'مكيف', en: 'Air Conditioner', fr: 'Conditionneur' },
+  { ar: 'كاميرا', en: 'Camera', fr: 'Cameras' },
+  { ar: 'تلفزيون', en: 'TV1', fr: 'TV1' },
+  { ar: 'مكيف', en: 'Air Conditioner1', fr: 'Conditionneur1' },
+  { ar: 'كاميرا', en: 'Camera1', fr: 'Cameras1' },
+  { ar: 'تلفزيون', en: 'TV2', fr: 'TV2' },
+  { ar: 'مكيف', en: 'Air Conditioner2', fr: 'Conditionneur2' },
+  { ar: 'كاميرا', en: 'Camera3', fr: 'Cameras3' },
+  { ar: 'تلفزيون', en: 'TV3', fr: 'TV3' },
+  { ar: 'مكيف', en: 'Air Conditioner4', fr: 'Conditionneur4' },
+  { ar: 'كاميرا', en: 'Camera5', fr: 'Cameras5' },
+  { ar: 'تلفزيون', en: 'TV4', fr: 'TV4' },
+  { ar: 'مكيف', en: 'Air Conditioner5', fr: 'Conditionneur5' },
+  { ar: 'كاميرا', en: 'Camera6', fr: 'Cameras6' },
+  { ar: 'تلفزيون', en: 'TV5', fr: 'TV5' },
+  { ar: 'مكيف', en: 'Air Conditioner6', fr: 'Conditionneur6' },
+  { ar: 'كاميرا', en: 'Camera7', fr: 'Cameras7' },
+  { ar: 'تلفزيون', en: 'TV6', fr: 'TV6' },
+  { ar: 'مكيف', en: 'Air Conditioner7', fr: 'Conditionneur7' },
+  { ar: 'كاميرا', en: 'Camera8', fr: 'Cameras8' },
 ];
 
 // ============================================
@@ -157,11 +179,11 @@ const seedProducts = async (categories: any[], brands: any[]) => {
   console.log('\n📌 Seeding Products...');
 
   const existingProducts = await Product.countDocuments();
-  if (existingProducts > 0) {
-    console.log('⚠️  Products already exist');
-    const products = await Product.find();
-    return products;
-  }
+  // if (existingProducts > 0) {
+  //   console.log('⚠️  Products already exist');
+  //   const products = await Product.find();
+  //   return products;
+  // }
 
   const products = await Promise.all(
     productNames.map((product, index) =>
