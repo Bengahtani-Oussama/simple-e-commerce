@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IProductPriority {
   product: mongoose.Types.ObjectId;
@@ -21,14 +21,14 @@ export interface ISection extends Document {
     fr?: string;
   };
   products: mongoose.Types.ObjectId[]; // References to Product model (deprecated - use productPriorities)
-  
+
   // ✨ NEW: Product Priority System
   productPriorities: IProductPriority[];
-  
+
   isActive: boolean;
   order: number; // For sorting sections on frontend
   minProducts: number; // Minimum required products (default: 5)
-  
+
   // Scheduling Features
   scheduling: {
     enabled: boolean;
@@ -36,7 +36,7 @@ export interface ISection extends Document {
     endDate?: Date;
     autoArchive: boolean;
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,17 +46,17 @@ const sectionSchema = new Schema<ISection>(
     name: {
       ar: {
         type: String,
-        required: [true, 'Arabic name is required'],
+        required: [true, "Arabic name is required"],
         trim: true,
       },
       en: {
         type: String,
-        required: [true, 'English name is required'],
+        required: [true, "English name is required"],
         trim: true,
       },
       fr: {
         type: String,
-        required: [true, 'French name is required'],
+        required: [true, "French name is required"],
         trim: true,
       },
     },
@@ -74,9 +74,36 @@ const sectionSchema = new Schema<ISection>(
     products: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'Product',
+        ref: "Product",
       },
     ],
+    productPriorities: {
+      type: [
+        {
+          product: {
+            type: Schema.Types.ObjectId,
+            ref: "Product",
+            required: true,
+          },
+          position: {
+            type: Number,
+            default: 0,
+          },
+          isPinned: {
+            type: Boolean,
+            default: false,
+          },
+          isFeatured: {
+            type: Boolean,
+            default: false,
+          },
+          customNote: {
+            type: String,
+          },
+        },
+      ],
+      default: [], // 🔑 CRITICAL
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -88,7 +115,7 @@ const sectionSchema = new Schema<ISection>(
     minProducts: {
       type: Number,
       default: 5,
-      min: [1, 'Minimum products must be at least 1'],
+      min: [1, "Minimum products must be at least 1"],
     },
     scheduling: {
       enabled: {
@@ -109,7 +136,7 @@ const sectionSchema = new Schema<ISection>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for performance
@@ -118,27 +145,30 @@ sectionSchema.index({ isActive: 1 });
 sectionSchema.index({ order: 1 });
 
 // Validation: Ensure minimum product count
-sectionSchema.pre('save', function (next) {
+sectionSchema.pre("save", function (next) {
   // Support both old (products array) and new (productPriorities) formats
-  const productCount = this.productPriorities.length > 0 
-    ? this.productPriorities.length 
-    : this.products.length;
-  
+  const productCount =
+    this.productPriorities.length > 0
+      ? this.productPriorities.length
+      : this.products.length;
+
   if (productCount < this.minProducts) {
     return next(
-      new Error(
-        `Section must have at least ${this.minProducts} products`
-      )
+      new Error(`Section must have at least ${this.minProducts} products`),
     );
   }
-  
+
   // Validate scheduling dates
-  if (this.scheduling.enabled && this.scheduling.startDate && this.scheduling.endDate) {
+  if (
+    this.scheduling.enabled &&
+    this.scheduling.startDate &&
+    this.scheduling.endDate
+  ) {
     if (this.scheduling.endDate <= this.scheduling.startDate) {
-      return next(new Error('End date must be after start date'));
+      return next(new Error("End date must be after start date"));
     }
   }
-  
+
   // Auto-migrate from old format to new format
   if (this.products.length > 0 && this.productPriorities.length === 0) {
     this.productPriorities = this.products.map((productId, index) => ({
@@ -148,42 +178,42 @@ sectionSchema.pre('save', function (next) {
       isFeatured: false,
     }));
   }
-  
+
   next();
 });
 
 // Virtual to get active product count
-sectionSchema.virtual('activeProductCount').get(function () {
-  return this.productPriorities.length > 0 
-    ? this.productPriorities.length 
+sectionSchema.virtual("activeProductCount").get(function () {
+  return this.productPriorities.length > 0
+    ? this.productPriorities.length
     : this.products.length;
 });
 
 // Virtual to check if section is currently scheduled to be active
-sectionSchema.virtual('isScheduledActive').get(function () {
+sectionSchema.virtual("isScheduledActive").get(function () {
   if (!this.scheduling.enabled) return this.isActive;
-  
+
   const now = new Date();
-  const hasStarted = !this.scheduling.startDate || now >= this.scheduling.startDate;
+  const hasStarted =
+    !this.scheduling.startDate || now >= this.scheduling.startDate;
   const hasNotEnded = !this.scheduling.endDate || now < this.scheduling.endDate;
-  
+
   return hasStarted && hasNotEnded && this.isActive;
 });
 
 // Virtual to get ordered products (sorted by position, pinned first)
-sectionSchema.virtual('orderedProducts').get(function () {
-  return this.productPriorities
-    .sort((a, b) => {
-      // Pinned products first
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      
-      // Then by position
-      return a.position - b.position;
-    });
+sectionSchema.virtual("orderedProducts").get(function () {
+  return this.productPriorities.sort((a, b) => {
+    // Pinned products first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+
+    // Then by position
+    return a.position - b.position;
+  });
 });
 
-sectionSchema.set('toJSON', { virtuals: true });
-sectionSchema.set('toObject', { virtuals: true });
+sectionSchema.set("toJSON", { virtuals: true });
+sectionSchema.set("toObject", { virtuals: true });
 
-export default mongoose.model<ISection>('Section', sectionSchema);
+export default mongoose.model<ISection>("Section", sectionSchema);
