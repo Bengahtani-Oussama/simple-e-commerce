@@ -1,29 +1,43 @@
-import { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthState, useAuthStore } from './store/authStore';
+import { useEffect, Suspense, lazy } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { AuthState, useAuthStore } from "./store/authStore";
 // import { Toaster } from './components/ui/toaster';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 
 // Lazy load pages for better performance
-const Login = lazy(() => import('./pages/auth/Login'));
-const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
-const ProductList = lazy(() => import('./pages/products/ProductList'));
-const ProductCreate = lazy(() => import('./pages/products/ProductCreate'));
-const ProductEdit = lazy(() => import('./pages/products/ProductEdit'));
-const InventoryList = lazy(() => import('./pages/inventory/InventoryOverview'));
-const InventoryAdjustment = lazy(() => import('./pages/inventory/StockAdjustment'));
-const InventoryHistory = lazy(() => import('./pages/inventory/StockHistory'));
-const CategoryList = lazy(() => import('./pages/categories/CategoryList'));
-const BrandList = lazy(() => import('./pages/brands/BrandList'));
-const OrderList = lazy(() => import('./pages/orders/OrderList'));
-const CouponList = lazy(() => import('./pages/coupons/CouponList'));
-const CouponCreate = lazy(() => import('./pages/coupons/CouponCreate'));
-const CouponEdit = lazy(() => import('./pages/coupons/CouponEdit'));
-const OrderDetail = lazy(() => import('./pages/orders/OrderDetail'));
-const CustomerList = lazy(() => import('./pages/customers/CustomerList'));
-const CustomerDetail = lazy(() => import('./pages/customers/CustomerDetail'));
-const Settings = lazy(() => import('./pages/settings/Settings'));
-const DashboardLayout = lazy(() => import('./components/layout/DashboardLayout'));
+const Login = lazy(() => import("./pages/auth/Login"));
+const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"));
+const ProductList = lazy(() => import("./pages/products/ProductList"));
+const ProductCreate = lazy(() => import("./pages/products/ProductCreate"));
+const ProductEdit = lazy(() => import("./pages/products/ProductEdit"));
+const SectionList = lazy(() => import("./pages/sections/SectionList"));
+const SectionCreate = lazy(() => import("./pages/sections/SectionCreate"));
+const SectionEdit = lazy(() => import("./pages/sections/SectionEdit"));
+const SectionDetail = lazy(() => import("./pages/sections/SectionDetail"));
+const InventoryList = lazy(() => import("./pages/inventory/InventoryOverview"));
+const InventoryAdjustment = lazy(
+  () => import("./pages/inventory/StockAdjustment"),
+);
+const InventoryHistory = lazy(() => import("./pages/inventory/StockHistory"));
+const CategoryList = lazy(() => import("./pages/categories/CategoryList"));
+const BrandList = lazy(() => import("./pages/brands/BrandList"));
+const OrderList = lazy(() => import("./pages/orders/OrderList"));
+const CouponList = lazy(() => import("./pages/coupons/CouponList"));
+const CouponCreate = lazy(() => import("./pages/coupons/CouponCreate"));
+const CouponEdit = lazy(() => import("./pages/coupons/CouponEdit"));
+const OrderDetail = lazy(() => import("./pages/orders/OrderDetail"));
+const CustomerList = lazy(() => import("./pages/customers/CustomerList"));
+const CustomerDetail = lazy(() => import("./pages/customers/CustomerDetail"));
+const Settings = lazy(() => import("./pages/settings/Settings"));
+const DashboardLayout = lazy(
+  () => import("./components/layout/DashboardLayout"),
+);
 
 // Loading component
 function LoadingFallback() {
@@ -39,7 +53,7 @@ function LoadingFallback() {
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore() as AuthState ;
+  const { isAuthenticated, isLoading } = useAuthStore() as AuthState;
   const location = useLocation();
 
   if (isLoading) {
@@ -61,7 +75,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
   if (isAuthenticated) {
     // Redirect to the page they tried to visit, or dashboard
-    const from = (location.state as any)?.from?.pathname || '/';
+    const from = (location.state as any)?.from?.pathname || "/";
     return <Navigate to={from} replace />;
   }
 
@@ -110,11 +124,24 @@ function App() {
               <Route path="edit/:id" element={<ProductEdit />} />
             </Route>
 
+            <Route path="sections">
+              <Route index element={<SectionList />} />
+              <Route path="create" element={<SectionCreate />} />
+    <Route path="edit/:id" element={<SectionEdit />} />
+    <Route path=":id" element={<SectionDetail />} />
+            </Route>
+
             {/* Inventory */}
             <Route path="inventory">
               <Route index element={<InventoryList />} />
-              <Route path="adjust/:productId/:variantId" element={<InventoryAdjustment />} />
-              <Route path="history/:productId/:variantId" element={<InventoryHistory />} />
+              <Route
+                path="adjust/:productId/:variantId"
+                element={<InventoryAdjustment />}
+              />
+              <Route
+                path="history/:productId/:variantId"
+                element={<InventoryHistory />}
+              />
             </Route>
 
             {/* Categories */}

@@ -15,6 +15,7 @@ import {
   Ticket,
   Blocks,
   ArrowRight,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -63,6 +64,11 @@ const DashboardLayout = () => {
       name: "Products",
       href: "/products",
       icon: Package,
+    },
+    {
+      name: "Sections",
+      href: "/sections",
+      icon: Layers,
     },
     {
       name: "Inventory",

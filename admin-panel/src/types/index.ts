@@ -374,3 +374,89 @@ export interface LowStockAlert {
   image?: string;
   urgency: 'critical' | 'high' | 'medium';
 }
+
+// Section Types
+export interface Section {
+  _id: string;
+  name: {
+    ar: string;
+    en: string;
+    fr: string;
+  };
+  slug: string;
+  description?: {
+    ar?: string;
+    en?: string;
+    fr?: string;
+  };
+  products: string[] | Product[]; // Legacy support
+  productPriorities: ProductPriority[];
+  isActive: boolean;
+  order: number;
+  minProducts: number;
+  scheduling: {
+    enabled: boolean;
+    startDate?: string;
+    endDate?: string;
+    autoArchive: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+  activeProductCount?: number; // Virtual field
+  isScheduledActive?: boolean; // Virtual field
+  orderedProducts?: ProductPriority[]; // Virtual field
+}
+
+export interface ProductPriority {
+  _id?: string;
+  product: string | Product;
+  position: number;
+  isPinned: boolean;
+  isFeatured: boolean;
+  customNote?: string;
+}
+
+export interface SectionFormData {
+  name: {
+    ar: string;
+    en: string;
+    fr: string;
+  };
+  description?: {
+    ar?: string;
+    en?: string;
+    fr?: string;
+  };
+  products: string[];
+  isActive: boolean;
+  order: number;
+  minProducts: number;
+  scheduling?: {
+    enabled: boolean;
+    startDate?: string;
+    endDate?: string;
+    autoArchive: boolean;
+  };
+}
+
+export interface SectionStats {
+  totalSections: number;
+  activeSections: number;
+  inactiveSections: number;
+  scheduledSections: number;
+  totalProducts: number;
+  averageProductsPerSection: number;
+}
+
+export interface ProductReorderItem {
+  productId: string;
+  position: number;
+}
+
+export interface ProductPriorityUpdate {
+  productId: string;
+  position?: number;
+  isPinned?: boolean;
+  isFeatured?: boolean;
+  customNote?: string;
+}
