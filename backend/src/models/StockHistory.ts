@@ -21,19 +21,23 @@ const stockHistorySchema = new Schema<IStockHistory>(
       type: Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
+      index: true,
     },
     variant: {
       type: Schema.Types.ObjectId,
       required: true,
+      index: true,
     },
     sku: {
       type: String,
       required: true,
+      index: true,
     },
     type: {
       type: String,
       required: true,
       enum: ['adjustment', 'sale', 'return', 'restock', 'correction'],
+      index: true,
     },
     quantityChange: {
       type: Number,
@@ -67,9 +71,6 @@ const stockHistorySchema = new Schema<IStockHistory>(
 );
 
 // Indexes for efficient queries
-stockHistorySchema.index({ product: 1, variant: 1 });
-stockHistorySchema.index({ sku: 1 });
 stockHistorySchema.index({ createdAt: -1 });
-stockHistorySchema.index({ type: 1 });
 
 export default mongoose.model<IStockHistory>('StockHistory', stockHistorySchema);

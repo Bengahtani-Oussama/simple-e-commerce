@@ -123,6 +123,7 @@ const productSchema = new Schema<IProduct>(
       required: true,
       unique: true,
       lowercase: true,
+      index: true,
     },
     description: {
       ar: { type: String, required: true },
@@ -133,6 +134,7 @@ const productSchema = new Schema<IProduct>(
       type: Schema.Types.ObjectId,
       ref: 'Category',
       required: true,
+      index: true,
     },
     subcategory: {
       type: Schema.Types.ObjectId,
@@ -141,6 +143,7 @@ const productSchema = new Schema<IProduct>(
     brand: {
       type: Schema.Types.ObjectId,
       ref: 'Brand',
+      index: true,
     },
     basePrice: {
       type: Number,
@@ -174,10 +177,12 @@ const productSchema = new Schema<IProduct>(
     featured: {
       type: Boolean,
       default: false,
+      index: true,
     },
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
     soldCount: {
       type: Number,
@@ -200,11 +205,6 @@ const productSchema = new Schema<IProduct>(
 );
 
 // Indexes for performance
-// productSchema.index({ slug: 1 });
-productSchema.index({ category: 1 });
-productSchema.index({ brand: 1 });
-productSchema.index({ isActive: 1 });
-productSchema.index({ featured: 1 });
 productSchema.index({ 'name.ar': 'text', 'name.en': 'text', 'name.fr': 'text' });
 
 // Ensure unique SKUs across all variants

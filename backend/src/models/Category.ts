@@ -32,6 +32,7 @@ const categorySchema = new Schema<ICategory>(
       required: true,
       unique: true,
       lowercase: true,
+      index: true,
     },
     description: {
       ar: String,
@@ -45,10 +46,12 @@ const categorySchema = new Schema<ICategory>(
       type: Schema.Types.ObjectId,
       ref: 'Category',
       default: null,
+      index: true,
     },
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
     order: {
       type: Number,
@@ -59,11 +62,6 @@ const categorySchema = new Schema<ICategory>(
     timestamps: true,
   }
 );
-
-// Index for faster queries
-// categorySchema.index({ slug: 1 });
-categorySchema.index({ parent: 1 });
-categorySchema.index({ isActive: 1 });
 
 // Virtual for subcategories
 categorySchema.virtual('subcategories', {

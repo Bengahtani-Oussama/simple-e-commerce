@@ -79,6 +79,7 @@ const cartSchema = new Schema<ICart>(
       ref: 'User',
       required: true,
       unique: true,
+      index: true,
     },
     items: [cartItemSchema],
     subtotal: {
@@ -96,8 +97,5 @@ cartSchema.pre('save', function (next) {
   this.subtotal = this.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   next();
 });
-
-// Index for faster queries
-// cartSchema.index({ user: 1 });
 
 export default mongoose.model<ICart>('Cart', cartSchema);

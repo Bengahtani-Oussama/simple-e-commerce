@@ -49,6 +49,7 @@ const adminPreferencesSchema = new Schema<IAdminPreferences>(
       ref: "Admin",
       required: true,
       unique: true,
+      index: true,
     },
     preferredLanguage: {
       type: String,
@@ -116,9 +117,6 @@ const adminPreferencesSchema = new Schema<IAdminPreferences>(
     timestamps: true,
   },
 );
-
-// Index for faster queries
-adminPreferencesSchema.index({ admin: 1 });
 
 // Method to check if notification can be sent (cooldown check)
 adminPreferencesSchema.methods.canSendNotification = function (

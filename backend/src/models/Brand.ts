@@ -26,6 +26,7 @@ const brandSchema = new Schema<IBrand>(
       required: true,
       unique: true,
       lowercase: true,
+      index: true,
     },
     logo: {
       type: String, // Cloudinary URL
@@ -38,15 +39,12 @@ const brandSchema = new Schema<IBrand>(
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
   },
   {
     timestamps: true,
   }
 );
-
-// Index for faster queries
-// brandSchema.index({ slug: 1 });
-brandSchema.index({ isActive: 1 });
 
 export default mongoose.model<IBrand>('Brand', brandSchema);

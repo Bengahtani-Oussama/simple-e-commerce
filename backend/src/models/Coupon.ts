@@ -41,6 +41,7 @@ const couponSchema = new Schema<ICoupon>(
       trim: true,
       minlength: [3, 'Coupon code must be at least 3 characters'],
       maxlength: [50, 'Coupon code must be less than 50 characters'],
+      index: true,
     },
     type: {
       type: String,
@@ -103,10 +104,12 @@ const couponSchema = new Schema<ICoupon>(
         },
         message: 'End date must be after start date',
       },
+      index: true,
     },
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
     description: {
       type: String,
@@ -121,11 +124,6 @@ const couponSchema = new Schema<ICoupon>(
     timestamps: true,
   }
 );
-
-// Indexes for performance
-// couponSchema.index({ code: 1 }, { unique: true });
-couponSchema.index({ isActive: 1 });
-couponSchema.index({ endDate: 1 });
 
 // Virtual to check if coupon is currently valid
 couponSchema.virtual('isValid').get(function () {

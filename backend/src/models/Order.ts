@@ -173,11 +173,13 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
     items: {
       type: [orderItemSchema],
@@ -245,6 +247,7 @@ const orderSchema = new Schema<IOrder>(
         "cancelled",
       ],
       default: "pending",
+      index: true,
     },
     trackingNumber: String,
     estimatedDeliveryDate: Date,
@@ -293,9 +296,6 @@ orderSchema.pre("save", async function (next) {
 });
 
 // Indexes
-// orderSchema.index({ orderNumber: 1 });
-orderSchema.index({ user: 1 });
-orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model<IOrder>("Order", orderSchema);
