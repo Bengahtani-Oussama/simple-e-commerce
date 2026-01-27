@@ -1,8 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// ===================================
-// NEW APPROACH: Simplified Data Model
-// ===================================
+export interface IProductPriority {
+  product: mongoose.Types.ObjectId;
+  position: number; // 0-based ordering
+  isPinned: boolean; // Pin to top of section
+  isFeatured: boolean; // Special highlighting
+  customNote?: string; // Optional admin note
+}
 
 export interface ISection extends Document {
   name: {
@@ -16,21 +20,20 @@ export interface ISection extends Document {
     en?: string;
     fr?: string;
   };
+  products: mongoose.Types.ObjectId[]; // References to Product model (deprecated - use productPriorities)
   
-  // ✨ NEW: Simple product array with explicit ordering
-  productIds: string[];  // Ordered array of product IDs
-  
-  // ✨ NEW: Separate metadata for cleaner queries
-  pinnedProducts: string[];  // Product IDs that are pinned
-  featuredProducts: string[];  // Product IDs that are featured
-  
-  // ✨ NEW: Position map for quick lookups (denormalized)
-  productPositions: Map<string, number>;  // { productId: position }
+  // ✨ NEW: Product Priority System
+  productPriorities: IProductPriority[];
   
   isActive: boolean;
-  order: number;
-  minProducts: number;
+  order: number; // For sorting sections on frontend
+  minProducts: number; // Minimum required products (default: 5)
+
+  // ✨ NEW: Product Priority System
+  pinnedProducts: mongoose.Types.ObjectId[];
+  featuredProducts: mongoose.Types.ObjectId[];
   
+  // Scheduling Features
   scheduling: {
     enabled: boolean;
     startDate?: Date;
@@ -38,26 +41,32 @@ export interface ISection extends Document {
     autoArchive: boolean;
   };
   
-  // Metadata
   createdAt: Date;
   updatedAt: Date;
-  lastCleanup?: Date;
 
+  togglePin: (productId: string) => Promise<void>;
+  toggleFeature: (productId: mongoose.Types.ObjectId) => Promise<void>;
   rebuildPositionMap: () => void;
-  removeProduct(productId: string): boolean;
-  moveProduct(productId: string, newPosition: number): boolean;
-  addProduct(productId: string, position?: number): void;
-  getOrderedProducts(): { productId: string; position: number; isPinned: boolean; isFeatured: boolean }[];
-  togglePin(productId: string): boolean;
-  toggleFeature(productId: string): boolean;
 }
 
 const sectionSchema = new Schema<ISection>(
   {
     name: {
-      ar: { type: String, required: true, trim: true },
-      en: { type: String, required: true, trim: true },
-      fr: { type: String, required: true, trim: true },
+      ar: {
+        type: String,
+        required: [true, 'Arabic name is required'],
+        trim: true,
+      },
+      en: {
+        type: String,
+        required: [true, 'English name is required'],
+        trim: true,
+      },
+      fr: {
+        type: String,
+        required: [true, 'French name is required'],
+        trim: true,
+      },
     },
     slug: {
       type: String,
@@ -66,198 +75,128 @@ const sectionSchema = new Schema<ISection>(
       lowercase: true,
       index: true,
     },
+    productPriorities: {
+      type: [
+        {
+          product: {
+            type: Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true,
+          },
+          position: {
+            type: Number,
+            required: true,
+          },
+          isPinned: {
+            type: Boolean,
+            default: false,
+          },
+          isFeatured: {
+            type: Boolean,
+            default: false,
+          },
+          customNote: {
+            type: String,
+          },
+        },
+      ],
+      default: [],
+    },
     description: {
       ar: String,
       en: String,
       fr: String,
     },
-    
-    // Simple ordered array
-    productIds: [{
-      type: String,
-      required: true,
-    }],
-    
+    products: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
+
     // Metadata arrays
     pinnedProducts: [String],
     featuredProducts: [String],
-    
-    // Position map stored as object in MongoDB
-    productPositions: {
-      type: Map,
-      of: Number,
-      default: new Map(),
-    },
-    
+
     isActive: {
       type: Boolean,
       default: true,
-      index: true,
     },
     order: {
       type: Number,
       default: 0,
-      index: true,
     },
     minProducts: {
       type: Number,
       default: 5,
-      min: 1,
+      min: [1, 'Minimum products must be at least 1'],
     },
     scheduling: {
-      enabled: { type: Boolean, default: false },
-      startDate: Date,
-      endDate: Date,
-      autoArchive: { type: Boolean, default: false },
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      startDate: {
+        type: Date,
+      },
+      endDate: {
+        type: Date,
+      },
+      autoArchive: {
+        type: Boolean,
+        default: false,
+      },
     },
-    lastCleanup: Date,
   },
   {
     timestamps: true,
   }
 );
 
-// ===================================
-// INDEXES
-// ===================================
-sectionSchema.index({ 'scheduling.startDate': 1, 'scheduling.endDate': 1 });
-
-// ===================================
-// INSTANCE METHODS
-// ===================================
-
-// Add product at specific position
-sectionSchema.methods.addProduct = function(
-  productId: string, 
-  position?: number
-): void {
-  // Remove if exists
-  this.productIds = this.productIds.filter((id: string) => id !== productId);
+// Validation: Ensure minimum product count
+sectionSchema.pre('save', function (next) {
+  // Support both old (products array) and new (productPriorities) formats
+  const productCount = this.productPriorities.length > 0 
+    ? this.productPriorities.length 
+    : this.products.length;
   
-  // Add at position
-  if (position !== undefined && position >= 0 && position <= this.productIds.length) {
-    this.productIds.splice(position, 0, productId);
-  } else {
-    this.productIds.push(productId);
-  }
-  
-  // Rebuild position map
-  this.rebuildPositionMap();
-};
-
-// Remove product
-sectionSchema.methods.removeProduct = function(productId: string): boolean {
-  const index = this.productIds.indexOf(productId);
-  if (index === -1) return false;
-  
-  this.productIds.splice(index, 1);
-  this.pinnedProducts = this.pinnedProducts.filter((id: string) => id !== productId);
-  this.featuredProducts = this.featuredProducts.filter((id: string) => id !== productId);
-  
-  this.rebuildPositionMap();
-  return true;
-};
-
-// Move product to new position
-sectionSchema.methods.moveProduct = function(
-  productId: string, 
-  newPosition: number
-): boolean {
-  const oldIndex = this.productIds.indexOf(productId);
-  if (oldIndex === -1) return false;
-  
-  // Remove from old position
-  this.productIds.splice(oldIndex, 1);
-  
-  // Insert at new position
-  this.productIds.splice(newPosition, 0, productId);
-  
-  this.rebuildPositionMap();
-  return true;
-};
-
-// Toggle pin status
-sectionSchema.methods.togglePin = function(productId: string): boolean {
-  if (!this.productIds.includes(productId)) return false;
-  
-  const index = this.pinnedProducts.indexOf(productId);
-  if (index === -1) {
-    this.pinnedProducts.push(productId);
-  } else {
-    this.pinnedProducts.splice(index, 1);
-  }
-  
-  return true;
-};
-
-// Toggle feature status
-sectionSchema.methods.toggleFeature = function(productId: string): boolean {
-  if (!this.productIds.includes(productId)) return false;
-  
-  const index = this.featuredProducts.indexOf(productId);
-  if (index === -1) {
-    this.featuredProducts.push(productId);
-  } else {
-    this.featuredProducts.splice(index, 1);
-  }
-  
-  return true;
-};
-
-// Rebuild position map from array
-sectionSchema.methods.rebuildPositionMap = function(): void {
-  this.productPositions = new Map();
-  this.productIds.forEach((id: string, index: number) => {
-    this.productPositions.set(id, index);
-  });
-};
-
-// Get ordered products with metadata
-sectionSchema.methods.getOrderedProducts = function() {
-  return this.productIds.map((id: string, index: number) => ({
-    productId: id,
-    position: index,
-    isPinned: this.pinnedProducts.includes(id),
-    isFeatured: this.featuredProducts.includes(id),
-  }));
-};
-
-// ===================================
-// PRE-SAVE HOOKS
-// ===================================
-sectionSchema.pre('save', function(next) {
-  // Validate minimum products
-  if (this.productIds.length < this.minProducts) {
+  if (productCount < this.minProducts) {
     return next(
-      new Error(`Section must have at least ${this.minProducts} products`)
+      new Error(
+        `Section must have at least ${this.minProducts} products`
+      )
     );
   }
   
   // Validate scheduling dates
-  if (
-    this.scheduling.enabled &&
-    this.scheduling.startDate &&
-    this.scheduling.endDate
-  ) {
+  if (this.scheduling.enabled && this.scheduling.startDate && this.scheduling.endDate) {
     if (this.scheduling.endDate <= this.scheduling.startDate) {
       return next(new Error('End date must be after start date'));
     }
   }
   
-  // Ensure position map is up to date
-  this.rebuildPositionMap();
+  // Auto-migrate from old format to new format
+  if (this.products.length > 0 && this.productPriorities.length === 0) {
+    this.productPriorities = this.products.map((productId, index) => ({
+      product: productId,
+      position: index,
+      isPinned: false,
+      isFeatured: false,
+    }));
+  }
   
   next();
 });
 
-// ===================================
-// VIRTUALS
-// ===================================
-sectionSchema.virtual('activeProductCount').get(function() {
-  return this.productIds.length;
+// Virtual to get active product count
+sectionSchema.virtual('activeProductCount').get(function () {
+  return this.productPriorities.length > 0 
+    ? this.productPriorities.length 
+    : this.products.length;
 });
 
-sectionSchema.virtual('isScheduledActive').get(function() {
+// Virtual to check if section is currently scheduled to be active
+sectionSchema.virtual('isScheduledActive').get(function () {
   if (!this.scheduling.enabled) return this.isActive;
   
   const now = new Date();
@@ -266,6 +205,128 @@ sectionSchema.virtual('isScheduledActive').get(function() {
   
   return hasStarted && hasNotEnded && this.isActive;
 });
+
+// Virtual to get ordered products (sorted by position, pinned first)
+sectionSchema.virtual('orderedProducts').get(function () {
+  return this.productPriorities
+    .sort((a, b) => {
+      // Pinned products first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      
+      // Then by position
+      return a.position - b.position;
+    });
+});
+
+// Toggle pin status
+sectionSchema.methods.togglePin = function(id: string): boolean {
+  if (!this.products.includes(id)) return false;
+  
+  const index = this.pinnedProducts.indexOf(id);
+  
+  if (index === -1) {
+    // Add
+    this.pinnedProducts.push(id);
+    
+    // update productPriorities
+    this.productPriorities.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === id as any) {
+        productPriority.isPinned = true;
+      }
+    });
+
+    // update orderedProducts
+    this.orderedProducts.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === id as any) {
+        productPriority.isPinned = true;
+      }
+    });
+  } else {
+    // Remove
+    this.pinnedProducts.splice(index, 1);
+
+    // update productPriorities
+    this.productPriorities.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === id as any) {
+        productPriority.isPinned = false;
+      }
+    });
+
+    // update orderedProducts
+    this.orderedProducts.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === id as any) {
+        productPriority.isPinned = false;
+      }
+    });
+  }
+  
+  return true;
+};
+
+// Remove product
+sectionSchema.methods.removeProduct = function(productId: string): boolean {
+  const index = this.products.indexOf(productId);
+  if (index === -1) return false;
+  
+  this.products.splice(index, 1);
+  this.pinnedProducts = this.pinnedProducts.filter((id: string) => id !== productId);
+  this.featuredProducts = this.featuredProducts.filter((id: string) => id !== productId);
+  
+  this.rebuildPositionMap();
+  return true;
+};
+
+// Toggle feature status
+sectionSchema.methods.toggleFeature = function(productId: string): boolean {
+  if (!this.products.includes(productId)) return false;
+  
+  const index = this.featuredProducts.indexOf(productId);
+  if (index === -1) {
+    // Add
+    this.featuredProducts.push(productId);
+    // update productPriorities
+    this.productPriorities.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === productId as any) {
+        productPriority.isFeatured = true;
+      }
+    });
+
+    // update orderedProducts
+    this.orderedProducts.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === productId as any) {
+        productPriority.isFeatured = true;
+      }
+    });
+  } else {
+    // Remove
+    this.featuredProducts.splice(index, 1);
+
+    // update productPriorities
+    this.productPriorities.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === productId as any) {
+        productPriority.isFeatured = false;
+      }
+    });
+
+    // update orderedProducts
+    this.orderedProducts.forEach((productPriority: IProductPriority) => {
+      if (productPriority.product.toString() === productId as any) {
+        productPriority.isFeatured = false;
+      }
+    });
+  }
+  
+  return true;
+};
+
+// Rebuild position map from array
+sectionSchema.methods.rebuildPositionMap = function(): void {
+  this.productPositions = new Map();
+  this.products.forEach((id: string, index: number) => {
+    this.productPositions.set(id, index);
+  });
+};
 
 sectionSchema.set('toJSON', { virtuals: true });
 sectionSchema.set('toObject', { virtuals: true });

@@ -1,13 +1,13 @@
-import Section from '../models/Section';
-import Product from '../models/Product';
-import Admin from '../models/Admin';
-import AdminPreferences from '../models/AdminPreferences';
-import mongoose from 'mongoose';
+import Section from "../models/Section";
+import Product from "../models/Product";
+import Admin from "../models/Admin";
+import AdminPreferences from "../models/AdminPreferences";
+import mongoose from "mongoose";
 import {
   sendSectionDeactivationNotification,
   sendSectionLowStockNotification,
   sendCleanupSummaryNotification,
-} from './sectionEmailTemplates';
+} from "./sectionEmailTemplates";
 
 /* ───────────────────────────────────────────── */
 /* Types */
@@ -16,7 +16,7 @@ import {
 interface DigestNotification {
   adminId: string;
   adminEmail: string;
-  language: 'ar' | 'en' | 'fr';
+  language: "ar" | "en" | "fr";
   deactivations: any[];
   lowStockWarnings: any[];
 }
@@ -28,7 +28,7 @@ const digestQueue: Map<string, DigestNotification> = new Map();
 /* ───────────────────────────────────────────── */
 
 const checkProductsStock = async (
-  productIds: string[]
+  productIds: string[],
 ): Promise<{
   validProducts: string[];
   outOfStock: string[];
@@ -45,7 +45,7 @@ const checkProductsStock = async (
     }
 
     const hasStock = product.variants.some(
-      (variant: any) => variant.stock > 0 && variant.isActive
+      (variant: any) => variant.stock > 0 && variant.isActive,
     );
 
     if (hasStock) {
@@ -70,7 +70,7 @@ export const autoCleanSections = async (): Promise<{
   details: any[];
 }> => {
   try {
-    console.log('\n🧹 Starting Auto Section Cleanup...\n');
+    console.log("\n🧹 Starting Auto Section Cleanup...\n");
 
     const sections = await Section.find({ isActive: true });
 
@@ -82,7 +82,10 @@ export const autoCleanSections = async (): Promise<{
     const lowStockList: any[] = [];
 
     for (const section of sections) {
-      const productIds = section.productIds.map((id: string) => id.toString());
+      const productIds = section.products.map((product: any) =>
+        product._id.toString(),
+      );
+      
 
       const { validProducts, outOfStock } =
         await checkProductsStock(productIds);
@@ -91,7 +94,13 @@ export const autoCleanSections = async (): Promise<{
 
       /* ───────────── Maintain Section ───────────── */
       if (validProducts.length >= section.minProducts) {
-        section.productIds = validProducts;
+        const updatedProducts =
+          section.products?.map((product: any) => product.id) ?? [];
+        section.products = updatedProducts.map(
+          (id: any) => new mongoose.Types.ObjectId(id),
+        );
+
+        // section.productIds = validProducts;
 
         await section.save();
 
@@ -103,7 +112,7 @@ export const autoCleanSections = async (): Promise<{
             sectionName: section.name.en,
             removedCount,
             remainingProducts: validProducts.length,
-            status: 'cleaned',
+            status: "cleaned",
           });
         }
 
@@ -120,10 +129,8 @@ export const autoCleanSections = async (): Promise<{
             minRequired: section.minProducts,
           });
         }
-      }
-
-      /* ───────────── Deactivate Section ───────────── */
-      else {
+      } else {
+        /* ───────────── Deactivate Section ───────────── */
         section.isActive = false;
         await section.save();
         deactivatedSections++;
@@ -134,7 +141,7 @@ export const autoCleanSections = async (): Promise<{
           removedCount,
           remainingProducts: validProducts.length,
           minRequired: section.minProducts,
-          status: 'deactivated',
+          status: "deactivated",
         });
 
         deactivatedList.push({
@@ -179,20 +186,16 @@ export const autoCleanSections = async (): Promise<{
         digest.lowStockWarnings.push(...lowStockList);
       } else {
         for (const d of deactivatedList) {
-          if (preferences.canSendNotification(d.sectionId, 'deactivation')) {
-            await sendSectionDeactivationNotification(
-              admin.email,
-              d,
-              language
-            );
-            preferences.recordNotification(d.sectionId, 'deactivation');
+          if (preferences.canSendNotification(d.sectionId, "deactivation")) {
+            await sendSectionDeactivationNotification(admin.email, d, language);
+            preferences.recordNotification(d.sectionId, "deactivation");
           }
         }
 
         for (const l of lowStockList) {
-          if (preferences.canSendNotification(l.sectionId, 'lowStock')) {
+          if (preferences.canSendNotification(l.sectionId, "lowStock")) {
             await sendSectionLowStockNotification(admin.email, l, language);
-            preferences.recordNotification(l.sectionId, 'lowStock');
+            preferences.recordNotification(l.sectionId, "lowStock");
           }
         }
       }
@@ -210,7 +213,7 @@ export const autoCleanSections = async (): Promise<{
             cleanupDate: new Date(),
             details,
           },
-          language
+          language,
         );
       }
 
@@ -225,7 +228,7 @@ export const autoCleanSections = async (): Promise<{
       details,
     };
   } catch (error) {
-    console.error('❌ Cleanup failed:', error);
+    console.error("❌ Cleanup failed:", error);
     return {
       success: false,
       totalCleaned: 0,
@@ -241,7 +244,7 @@ export const autoCleanSections = async (): Promise<{
 /* ───────────────────────────────────────────── */
 
 export const cleanSectionById = async (
-  sectionId: string
+  sectionId: string,
 ): Promise<{
   success: boolean;
   removedCount: number;
@@ -250,14 +253,19 @@ export const cleanSectionById = async (
   try {
     const section = await Section.findById(sectionId);
     if (!section) {
-      return { success: false, removedCount: 0, message: 'Section not found' };
+      return { success: false, removedCount: 0, message: "Section not found" };
     }
 
-    const productIds = section.productIds.map((id: string) => id.toString());
-    const { validProducts, outOfStock } =
-      await checkProductsStock(productIds);
+    const productIds = section.products.map((product: any) =>
+      product?._id.toString(),
+    );
+    const { validProducts, outOfStock } = await checkProductsStock(productIds);
 
-    section.productIds = validProducts;
+    const updatedProducts =
+      section.products?.map((product: any) => product.id) ?? [];
+    section.products = updatedProducts.map(
+      (id: any) => new mongoose.Types.ObjectId(id),
+    );
 
     if (validProducts.length < section.minProducts) {
       section.isActive = false;
@@ -270,14 +278,14 @@ export const cleanSectionById = async (
       removedCount: outOfStock.length,
       message:
         validProducts.length < section.minProducts
-          ? 'Section deactivated due to low products'
+          ? "Section deactivated due to low products"
           : `Removed ${outOfStock.length} out-of-stock products`,
     };
   } catch (error: any) {
     return {
       success: false,
       removedCount: 0,
-      message: error.message || 'Cleanup failed',
+      message: error.message || "Cleanup failed",
     };
   }
 };
@@ -300,7 +308,7 @@ export const sendDigestEmails = async (): Promise<void> => {
       {
         totalCleaned: digest.deactivations.reduce(
           (sum: number, d: any) => sum + d.removedProducts,
-          0
+          0,
         ),
         sectionsProcessed:
           digest.deactivations.length + digest.lowStockWarnings.length,
@@ -308,7 +316,7 @@ export const sendDigestEmails = async (): Promise<void> => {
         cleanupDate: new Date(),
         details: [],
       },
-      digest.language
+      digest.language,
     );
   }
 
@@ -327,7 +335,7 @@ export const processScheduledSections = async (): Promise<{
   let activated = 0;
   let deactivated = 0;
 
-  const sections = await Section.find({ 'scheduling.enabled': true });
+  const sections = await Section.find({ "scheduling.enabled": true });
 
   for (const section of sections) {
     let changed = false;

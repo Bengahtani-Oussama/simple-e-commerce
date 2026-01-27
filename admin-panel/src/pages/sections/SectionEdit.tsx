@@ -1,20 +1,21 @@
 // admin-panel/src/pages/sections/SectionEdit.tsx
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, X, Search, Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import api from '@/services/api';
-import { formatPrice, getImageUrl } from '@/utils';
-import type { Section, Product } from '@/types';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Save, X, Search, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import api from "@/services/api";
+import { formatPrice, getImageUrl } from "@/utils";
+import type { Section, Product } from "@/types";
+import { removeProductFromSection } from "@/services/sectionApi";
 
 const SectionEdit = () => {
   const { id } = useParams();
@@ -24,27 +25,27 @@ const SectionEdit = () => {
   const [section, setSection] = useState<Section | null>(null);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-  const [productSearch, setProductSearch] = useState('');
+  const [productSearch, setProductSearch] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: { ar: '', en: '', fr: '' },
-    description: { ar: '', en: '', fr: '' },
+    name: { ar: "", en: "", fr: "" },
+    description: { ar: "", en: "", fr: "" },
     products: [] as string[],
     isActive: true,
     order: 0,
     minProducts: 5,
     scheduling: {
       enabled: false,
-      startDate: '',
-      endDate: '',
+      startDate: "",
+      endDate: "",
       autoArchive: false,
     },
   });
 
   useEffect(() => {
     fetchSection();
-    searchProducts('');
+    searchProducts("");
   }, [id]);
 
   const fetchSection = async () => {
@@ -56,31 +57,41 @@ const SectionEdit = () => {
       // Populate form
       setFormData({
         name: sectionData.name,
-        description: sectionData.description || { ar: '', en: '', fr: '' },
-        products: sectionData.products.map((p: any) => (typeof p === 'string' ? p : p._id)),
+        description: sectionData.description || { ar: "", en: "", fr: "" },
+        products: sectionData.products.map((p: any) =>
+          typeof p === "string" ? p : p._id,
+        ),
         isActive: sectionData.isActive,
         order: sectionData.order,
         minProducts: sectionData.minProducts,
         scheduling: {
           enabled: sectionData.scheduling.enabled,
           startDate: sectionData.scheduling.startDate
-            ? new Date(sectionData.scheduling.startDate).toISOString().slice(0, 16)
-            : '',
+            ? new Date(sectionData.scheduling.startDate)
+                .toISOString()
+                .slice(0, 16)
+            : "",
           endDate: sectionData.scheduling.endDate
-            ? new Date(sectionData.scheduling.endDate).toISOString().slice(0, 16)
-            : '',
+            ? new Date(sectionData.scheduling.endDate)
+                .toISOString()
+                .slice(0, 16)
+            : "",
           autoArchive: sectionData.scheduling.autoArchive,
         },
       });
 
       // Set selected products (populated)
-      const productsArray = Array.isArray(sectionData.products) ? sectionData.products : [];
-      const productObjects = productsArray.filter((p: any) => typeof p === 'object');
+      const productsArray = Array.isArray(sectionData.products)
+        ? sectionData.products
+        : [];
+      const productObjects = productsArray.filter(
+        (p: any) => typeof p === "object",
+      );
       setSelectedProducts(productObjects);
     } catch (error) {
-      console.error('Failed to fetch section:', error);
-      alert('Failed to load section');
-      navigate('/sections');
+      console.error("Failed to fetch section:", error);
+      alert("Failed to load section");
+      navigate("/sections");
     } finally {
       setLoading(false);
     }
@@ -89,7 +100,7 @@ const SectionEdit = () => {
   const searchProducts = async (query: string) => {
     setSearchLoading(true);
     try {
-      const response = await api.get('/products', {
+      const response = await api.get("/products", {
         params: {
           search: query,
           active: true,
@@ -98,7 +109,7 @@ const SectionEdit = () => {
       });
       setAvailableProducts(response.data.data || []);
     } catch (error) {
-      console.error('Failed to search products:', error);
+      console.error("Failed to search products:", error);
     } finally {
       setSearchLoading(false);
     }
@@ -106,16 +117,18 @@ const SectionEdit = () => {
 
   const handleProductSearch = (value: string) => {
     setProductSearch(value);
-    if (value.length >= 2 || value === '') {
+    if (value.length >= 2 || value === "") {
       searchProducts(value);
     }
   };
 
   const toggleProductSelection = (product: Product) => {
     const isSelected = selectedProducts.some((p) => p._id === product._id);
-    
+
     if (isSelected) {
-      setSelectedProducts(selectedProducts.filter((p) => p._id !== product._id));
+      setSelectedProducts(
+        selectedProducts.filter((p) => p._id !== product._id),
+      );
       setFormData((prev) => ({
         ...prev,
         products: prev.products.filter((id) => id !== product._id),
@@ -129,12 +142,13 @@ const SectionEdit = () => {
     }
   };
 
-  const removeProduct = (productId: string) => {
+  const removeProduct = async (productId: string) => {
     setSelectedProducts(selectedProducts.filter((p) => p._id !== productId));
     setFormData((prev) => ({
       ...prev,
       products: prev.products.filter((id) => id !== productId),
     }));
+    await removeProductFromSection(id as string, productId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,7 +156,7 @@ const SectionEdit = () => {
 
     // Validation
     if (!formData.name.en || !formData.name.ar || !formData.name.fr) {
-      alert('Please provide section names in all languages');
+      alert("Please provide section names in all languages");
       return;
     }
 
@@ -156,7 +170,7 @@ const SectionEdit = () => {
         const start = new Date(formData.scheduling.startDate);
         const end = new Date(formData.scheduling.endDate);
         if (end <= start) {
-          alert('End date must be after start date');
+          alert("End date must be after start date");
           return;
         }
       }
@@ -165,18 +179,18 @@ const SectionEdit = () => {
     setSaving(true);
     try {
       await api.put(`/sections/${id}`, formData);
-      alert('Section updated successfully!');
+      alert("Section updated successfully!");
       navigate(`/sections/${id}`);
     } catch (error: any) {
-      console.error('Failed to update section:', error);
-      alert(error.response?.data?.message || 'Failed to update section');
+      console.error("Failed to update section:", error);
+      alert(error.response?.data?.message || "Failed to update section");
     } finally {
       setSaving(false);
     }
   };
 
   const filteredProducts = availableProducts.filter(
-    (p) => !selectedProducts.some((sp) => sp._id === p._id)
+    (p) => !selectedProducts.some((sp) => sp._id === p._id),
   );
 
   if (loading) {
@@ -201,7 +215,7 @@ const SectionEdit = () => {
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/sections')}
+            onClick={() => navigate("/sections")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -214,13 +228,13 @@ const SectionEdit = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/sections')}
+            onClick={() => navigate("/sections")}
           >
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -292,7 +306,7 @@ const SectionEdit = () => {
                   <Label>Description (English)</Label>
                   <Textarea
                     rows={3}
-                    value={formData.description?.en || ''}
+                    value={formData.description?.en || ""}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -308,7 +322,7 @@ const SectionEdit = () => {
                   <Label>Description (Arabic)</Label>
                   <Textarea
                     rows={3}
-                    value={formData.description?.ar || ''}
+                    value={formData.description?.ar || ""}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -325,7 +339,7 @@ const SectionEdit = () => {
                   <Label>Description (French)</Label>
                   <Textarea
                     rows={3}
-                    value={formData.description?.fr || ''}
+                    value={formData.description?.fr || ""}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -345,7 +359,8 @@ const SectionEdit = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                Select Products ({selectedProducts.length} / {formData.minProducts} min)
+                Select Products ({selectedProducts.length} /{" "}
+                {formData.minProducts} min)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -353,32 +368,45 @@ const SectionEdit = () => {
                 <div className="border rounded-lg p-4">
                   <Label className="mb-2 block">Selected Products</Label>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {selectedProducts.map((product) => (
-                      <div
-                        key={product._id}
-                        className="flex items-center gap-3 p-2 bg-muted rounded-lg"
-                      >
-                        <img
-                          src={getImageUrl(product.images[0])}
-                          alt={product.name.en}
-                          className="h-12 w-12 object-cover rounded"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{product.name.en}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatPrice(product.basePrice)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeProduct(product._id)}
+                    {selectedProducts.map((product) => {
+                      const hasStock =
+                        product.totalStock && product.totalStock > 0;
+                      return (
+                        <div
+                          key={product._id}
+                          className="flex items-center gap-3 p-2 bg-muted rounded-lg"
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                          <img
+                            src={getImageUrl(product.images[0])}
+                            alt={product.name.en}
+                            className="h-12 w-12 object-cover rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {product.name.en}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-muted-foreground">
+                                {formatPrice(product.basePrice)}
+                              </p>
+                              <Badge
+                                variant={hasStock ? "default" : "destructive"}
+                              >
+                                Stock: {product.totalStock || 0}
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeProduct(product._id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -400,13 +428,16 @@ const SectionEdit = () => {
                 {searchLoading ? (
                   <div className="p-8 text-center">
                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-                    <p className="mt-2 text-sm text-muted-foreground">Searching...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Searching...
+                    </p>
                   </div>
                 ) : filteredProducts.length > 0 ? (
                   <div className="p-2 space-y-1">
                     {filteredProducts.map((product) => {
-                      const hasStock = product.totalStock && product.totalStock > 0;
-                      
+                      const hasStock =
+                        product.totalStock && product.totalStock > 0;
+
                       return (
                         <div
                           key={product._id}
@@ -414,8 +445,12 @@ const SectionEdit = () => {
                           onClick={() => toggleProductSelection(product)}
                         >
                           <Checkbox
-                            checked={selectedProducts.some((p) => p._id === product._id)}
-                            onCheckedChange={() => toggleProductSelection(product)}
+                            checked={selectedProducts.some(
+                              (p) => p._id === product._id,
+                            )}
+                            onCheckedChange={() =>
+                              toggleProductSelection(product)
+                            }
                           />
                           <img
                             src={getImageUrl(product.images[0])}
@@ -423,10 +458,14 @@ const SectionEdit = () => {
                             className="h-10 w-10 object-cover rounded"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{product.name.en}</p>
+                            <p className="font-medium truncate">
+                              {product.name.en}
+                            </p>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <span>{formatPrice(product.basePrice)}</span>
-                              <Badge variant={hasStock ? 'default' : 'destructive'}>
+                              <Badge
+                                variant={hasStock ? "default" : "destructive"}
+                              >
                                 Stock: {product.totalStock || 0}
                               </Badge>
                             </div>
@@ -439,7 +478,9 @@ const SectionEdit = () => {
                   <div className="p-8 text-center">
                     <Package className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      {productSearch ? 'No products found' : 'Start typing to search'}
+                      {productSearch
+                        ? "No products found"
+                        : "Start typing to search"}
                     </p>
                   </div>
                 )}

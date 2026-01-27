@@ -146,35 +146,6 @@ export const removeProductFromSection = async (
 // DRAG & DROP API
 // ===================================
 
-export const getSectionForDnD = async (
-  sectionId: string
-): Promise<{ success: boolean; data: SectionDnDData }> => {
-  const response = await api.get(`/sections/${sectionId}/dnd`);
-  return response.data;
-};
-
-export const reorderProducts = async (
-  sectionId: string,
-  newOrder: string[]
-) => {
-  const response = await api.put(`/sections/${sectionId}/dnd/reorder`, {
-    newOrder,
-  });
-  return response.data;
-};
-
-export const moveProduct = async (
-  sectionId: string,
-  productId: string,
-  newPosition: number
-) => {
-  const response = await api.put(`/sections/${sectionId}/dnd/move`, {
-    productId,
-    newPosition,
-  });
-  return response.data;
-};
-
 export const togglePinProduct = async (
   sectionId: string,
   productId: string
@@ -192,28 +163,5 @@ export const toggleFeatureProduct = async (
   const response = await api.put(
     `/sections/${sectionId}/dnd/feature/${productId}`
   );
-  return response.data;
-};
-
-export const batchUpdate = async (
-  sectionId: string,
-  updates: {
-    pin?: string[];
-    unpin?: string[];
-    feature?: string[];
-    unfeature?: string[];
-  }
-) => {
-  const response = await api.put(`/sections/${sectionId}/dnd/batch`, updates);
-  return response.data;
-};
-
-export const getPinnedProducts = async (sectionId: string) => {
-  const response = await api.get(`/sections/${sectionId}/dnd/pinned`);
-  return response.data;
-};
-
-export const getFeaturedProducts = async (sectionId: string) => {
-  const response = await api.get(`/sections/${sectionId}/dnd/featured`);
   return response.data;
 };

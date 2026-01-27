@@ -6,18 +6,14 @@ import {
   Edit,
   Pin,
   Star,
-  GripVertical,
   Trash2,
   Package,
   Calendar,
-  Save,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import api from '@/services/api';
 import { formatDateTime, formatPrice, getImageUrl } from '@/utils';
 
@@ -41,9 +37,6 @@ const SectionDetail = () => {
   const [section, setSection] = useState<any>(null);
   const [products, setProducts] = useState<ProductPriorityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     fetchSection();
@@ -71,45 +64,6 @@ const SectionDetail = () => {
     }
   };
 
-  const handleDragStart = (e: any, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: any, index: number) => {
-    e.preventDefault();
-    
-    if (draggedIndex === null || draggedIndex === index) return;
-
-    const newProducts = [...products];
-    const draggedItem = newProducts[draggedIndex];
-    
-    newProducts.splice(draggedIndex, 1);
-    newProducts.splice(index, 0, draggedItem);
-    
-    setProducts(newProducts);
-    setDraggedIndex(index);
-  };
-
-  const handleDragEnd = async () => {
-    if (draggedIndex === null) return;
-
-    try {
-      const productOrder = products.map((item, index) => ({
-        productId: item.product._id,
-        position: index,
-      }));
-
-      await api.put(`/sections/${id}/priorities/reorder`, { productOrder });
-      await fetchPriorities();
-    } catch (error) {
-      console.error('Failed to reorder:', error);
-      alert('Failed to save new order');
-    }
-    
-    setDraggedIndex(null);
-  };
-
   const togglePin = async (productId: string) => {
     try {
       await api.put(`/sections/${id}/priorities/${productId}/pin`);
@@ -125,18 +79,6 @@ const SectionDetail = () => {
       await fetchPriorities();
     } catch (error) {
       console.error('Failed to toggle feature:', error);
-    }
-  };
-
-  const saveNote = async (productId: string) => {
-    try {
-      await api.put(`/sections/${id}/priorities/${productId}`, {
-        customNote: noteText,
-      });
-      setEditingNote(null);
-      await fetchPriorities();
-    } catch (error) {
-      console.error('Failed to save note:', error);
     }
   };
 
@@ -265,7 +207,7 @@ const SectionDetail = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {products.length > 0 ? (
               products.map((item, index) => {
                 const productId = item.product._id;
@@ -273,13 +215,8 @@ const SectionDetail = () => {
                 return (
                   <div
                     key={productId}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
                     className={`
-                      border rounded-lg p-4 transition-all cursor-move
-                      ${draggedIndex === index ? 'opacity-50' : ''}
+                      border rounded-lg p-4 transition-all
                       ${item.isPinned ? 'border-blue-500 bg-blue-50/50' : ''}
                       ${item.isFeatured ? 'bg-yellow-50/50' : ''}
                       hover:shadow-md
@@ -287,7 +224,6 @@ const SectionDetail = () => {
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex items-center gap-2">
-                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
                         <span className="text-sm font-mono text-muted-foreground">
                           #{index + 1}
                         </span>
@@ -322,55 +258,6 @@ const SectionDetail = () => {
                             )}
                           </div>
                         </div>
-
-                        {editingNote === productId ? (
-                          <div className="mt-2 space-y-2">
-                            <Textarea
-                              value={noteText}
-                              onChange={(e) => setNoteText(e.target.value)}
-                              placeholder="Add admin note..."
-                              rows={2}
-                            />
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => saveNote(productId)}
-                              >
-                                <Save className="h-3 w-3 mr-1" />
-                                Save
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditingNote(null)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : item.customNote ? (
-                          <p
-                            className="text-sm text-muted-foreground mt-2 cursor-pointer hover:text-foreground"
-                            onClick={() => {
-                              setEditingNote(productId);
-                              setNoteText(item.customNote || '');
-                            }}
-                          >
-                            📝 {item.customNote}
-                          </p>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="mt-2 h-6 text-xs"
-                            onClick={() => {
-                              setEditingNote(productId);
-                              setNoteText('');
-                            }}
-                          >
-                            + Add note
-                          </Button>
-                        )}
                       </div>
 
                       <div className="flex flex-col gap-1">
@@ -422,10 +309,8 @@ const SectionDetail = () => {
           <div className="text-sm font-semibold">💡 Product Priority Tips</div>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
-          <p>• <strong>Drag & Drop:</strong> Reorder products by dragging them up or down</p>
           <p>• <strong>Pin:</strong> Keep important products at the top (they always show first)</p>
           <p>• <strong>Feature:</strong> Highlight special products with a badge</p>
-          <p>• <strong>Notes:</strong> Add internal notes to track why products are positioned</p>
         </CardContent>
       </Card>
     </div>

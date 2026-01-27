@@ -1,175 +1,56 @@
 import { Request, Response } from "express";
-import Section, { ISection } from "../models/Section";
+import Section from "../models/Section";
 import Product from "../models/Product";
+import { AuthRequest } from "../types";
 import mongoose from "mongoose";
 
-// ===================================
-// HELPER FUNCTIONS
-// ===================================
-
+// Helper function to generate slug
 const generateSlug = (text: string): string => {
-  return (
-    text
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]/g, "")
-      .slice(0, 50) + `-${Date.now()}`
-  );
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]/g, "")
+    .slice(0, 50);
 };
 
-// ✨ NEW: Validate products have stock (batched query)
-const validateProductsStock = async (
+// Helper function to check product stock availability
+const checkProductsStock = async (
   productIds: string[],
 ): Promise<{
-  valid: string[];
-  invalid: string[];
-  details: { [key: string]: string };
+  valid: boolean;
+  outOfStock: string[];
+  validProducts: string[];
 }> => {
-  const valid: string[] = [];
-  const invalid: string[] = [];
-  const details: { [key: string]: string } = {};
-
-  // Batch query - get all products at once
-  const products = await Product.find({
-    _id: { $in: productIds },
-    isActive: true,
-  });
-
-  const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+  const outOfStock: string[] = [];
+  const validProducts: string[] = [];
 
   for (const productId of productIds) {
-    const product = productMap.get(productId);
+    const product = await Product.findById(productId);
 
     if (!product) {
-      invalid.push(productId);
-      details[productId] = "Product not found or inactive";
-      continue;
+      continue; // Skip non-existent products
     }
 
-    // Check if any variant has stock
-    const hasStock = product.variants.some((v) => v.stock > 0 && v.isActive);
+    // Check if product has any variant with stock > 0
+    const hasStock = product.variants.some(
+      (variant) => variant.stock > 0 && variant.isActive,
+    );
 
-    if (hasStock) {
-      valid.push(productId);
+    if (hasStock && product.isActive) {
+      validProducts.push(productId);
     } else {
-      invalid.push(productId);
-      details[productId] = "No stock available";
+      outOfStock.push(productId);
     }
   }
 
-  return { valid, invalid, details };
+  return {
+    valid: validProducts.length >= 5, // Minimum 5 products with stock
+    outOfStock,
+    validProducts,
+  };
 };
 
-// ===================================
-// PUBLIC ROUTES
-// ===================================
-
-// @desc    Get all active sections (Public)
-// @route   GET /api/sections/public
-export const getPublicSections = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const sections = await Section.find({ isActive: true })
-      .sort({ order: 1 })
-      .lean();
-
-    // Populate products with stock info
-    const populatedSections = await Promise.all(
-      sections.map(async (section) => {
-        const products = await Product.find({
-          _id: { $in: section.productIds },
-          isActive: true,
-        })
-          .select("name slug images basePrice compareAtPrice variants")
-          .lean();
-
-        // Filter products with stock
-        const productsWithStock = products.filter((p) =>
-          p.variants.some((v) => v.stock > 0 && v.isActive),
-        );
-
-        const sortedProducts = productsWithStock.sort((a, b) => {
-          const posA =
-            (section.productPositions as unknown as Map<string, number>)?.get(
-              a._id.toString(),
-            ) || 0;
-          const posB =
-            (section.productPositions as unknown as Map<string, number>)?.get(
-              b._id.toString(),
-            ) || 0;
-          return posA - posB;
-        });
-
-        return {
-          ...section,
-          products: sortedProducts,
-          productCount: sortedProducts.length,
-        };
-      }),
-    );
-
-    // Filter sections with minimum products
-    const validSections = populatedSections.filter(
-      (s) => s.productCount >= s.minProducts,
-    );
-
-    res.status(200).json({
-      success: true,
-      count: validSections.length,
-      data: validSections,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch sections",
-    });
-  }
-};
-
-// @desc    Get section by ID
-// @route   GET /api/sections/:id
-export const getSection = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const section = await Section.findById(req.params.id);
-
-    if (!section) {
-      res.status(404).json({
-        success: false,
-        message: "Section not found",
-      });
-      return;
-    }
-
-    // Populate products
-    const products = await Product.find({
-      _id: { $in: section.productIds },
-    }).select("name slug images basePrice compareAtPrice variants isActive");
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...section.toObject(),
-        products,
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch section",
-    });
-  }
-};
-
-// ===================================
-// ADMIN ROUTES
-// ===================================
-
-// @desc    Get all sections (Admin)
+// @desc    Get all sections (with filters)
 // @route   GET /api/sections
 export const getSections = async (
   req: Request,
@@ -188,27 +69,16 @@ export const getSections = async (
     const skip = (pageNum - 1) * limitNum;
 
     const sections = await Section.find(filter)
+      .populate({
+        path: "products",
+        match: { isActive: true },
+        select: "name slug images basePrice compareAtPrice variants",
+      })
       .sort({ order: 1, createdAt: -1 })
       .skip(skip)
-      .limit(limitNum)
-      .lean();
+      .limit(limitNum);
 
     const total = await Section.countDocuments(filter);
-
-    // Populate product counts
-    const sectionsWithCounts = await Promise.all(
-      sections.map(async (section) => {
-        const validCount = await Product.countDocuments({
-          _id: { $in: section.productIds },
-          isActive: true,
-        });
-
-        return {
-          ...section,
-          validProductCount: validCount,
-        };
-      }),
-    );
 
     res.status(200).json({
       success: true,
@@ -216,7 +86,7 @@ export const getSections = async (
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
-      data: sectionsWithCounts,
+      data: sections,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -226,82 +96,193 @@ export const getSections = async (
   }
 };
 
-// @desc    Create section (Admin)
-// @route   POST /api/sections
-export const createSection = async (
+// @desc    Get sections for public display (only active sections with in-stock products)
+// @route   GET /api/sections/public
+export const getPublicSections = async (
   req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sections = await Section.find({ isActive: true })
+      .populate({
+        path: "products",
+        match: { isActive: true },
+        select: "name slug images basePrice compareAtPrice variants featured",
+      })
+      .sort({ order: 1 });
+
+    // Filter sections and products based on stock availability
+    const filteredSections = await Promise.all(
+      sections.map(async (section) => {
+        const sectionObj = section.toObject();
+
+        // Filter products with stock
+        const productsWithStock = sectionObj.products.filter((product: any) => {
+          if (!product) return false;
+          return product.variants.some(
+            (variant: any) => variant.stock > 0 && variant.isActive,
+          );
+        });
+
+        // Only include section if it has minimum required products
+        if (productsWithStock.length >= section.minProducts) {
+          return {
+            ...sectionObj,
+            products: productsWithStock,
+            activeProductCount: productsWithStock.length,
+          };
+        }
+        return null;
+      }),
+    );
+
+    // Remove null sections (those with insufficient products)
+    const validSections = filteredSections.filter((s) => s !== null);
+
+    res.status(200).json({
+      success: true,
+      count: validSections.length,
+      data: validSections,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch public sections",
+    });
+  }
+};
+
+// @desc    Get single section
+// @route   GET /api/sections/:id
+export const getSection = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const section = await Section.findById(req.params.id).populate({
+      path: "products",
+      select: "name slug images basePrice compareAtPrice variants isActive",
+    });
+
+    if (!section) {
+      res.status(404).json({
+        success: false,
+        message: "Section not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: section,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch section",
+    });
+  }
+};
+
+// @desc    Create section (Admin)
+// @route   POST /api/admin/sections
+export const createSection = async (
+  req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const {
       name,
       description,
-      productIds,
+      products,
       isActive,
       order,
       minProducts,
       scheduling,
     } = req.body;
 
-    // Validate required fields
-    if (!name || !productIds || !Array.isArray(productIds)) {
+    // Validate products array
+    if (
+      !products ||
+      !Array.isArray(products) ||
+      products.length < (minProducts || 5)
+    ) {
       res.status(400).json({
         success: false,
-        message: "Name and productIds array are required",
+        message: `Section must have at least ${minProducts || 5} products`,
       });
       return;
     }
 
-    // Validate minimum products
-    const min = minProducts || 5;
-    if (productIds.length < min) {
-      res.status(400).json({
-        success: false,
-        message: `Section must have at least ${min} products`,
-      });
-      return;
+    // Validate scheduling dates if enabled
+    if (scheduling?.enabled) {
+      if (scheduling.startDate && scheduling.endDate) {
+        const start = new Date(scheduling.startDate);
+        const end = new Date(scheduling.endDate);
+
+        if (end <= start) {
+          res.status(400).json({
+            success: false,
+            message: "End date must be after start date",
+          });
+          return;
+        }
+      }
     }
 
-    // ✨ NEW: Validate stock in batch
-    const stockCheck = await validateProductsStock(productIds);
+    // Check product stock availability
+    const stockCheck = await checkProductsStock(products);
 
-    if (stockCheck.valid.length < min) {
+    if (!stockCheck.valid) {
       res.status(400).json({
         success: false,
-        message: `Only ${stockCheck.valid.length} products have stock. Need at least ${min}`,
+        message: `Insufficient products with stock. Found ${stockCheck.validProducts.length}, need at least 5`,
         data: {
-          valid: stockCheck.valid,
-          invalid: stockCheck.invalid,
-          details: stockCheck.details,
+          outOfStock: stockCheck.outOfStock,
+          validProducts: stockCheck.validProducts,
         },
       });
       return;
     }
 
-    // Generate slug
-    const slug = generateSlug(name.en);
+    // Generate slug from English name
+    const slug = generateSlug(name.en) + `-${Date.now()}`;
 
-    // Create section
-    const section = new Section({
+    // Create product priorities array
+    const productPriorities = stockCheck.validProducts.map(
+      (productId, index) => ({
+        product: new mongoose.Types.ObjectId(productId),
+        position: index,
+        isPinned: false,
+        isFeatured: false,
+      }),
+    );
+
+    const section = await Section.create({
       name,
       slug,
       description,
-      productIds: stockCheck.valid,
+      products: stockCheck.validProducts, // Keep for backward compatibility
+      productPriorities, // New priority system
       isActive: isActive !== undefined ? isActive : true,
       order: order || 0,
-      minProducts: min,
+      minProducts: minProducts || 5,
       scheduling: scheduling || {
         enabled: false,
         autoArchive: false,
       },
     });
+    console.log("create section new");
 
-    await section.save();
+    const populatedSection = await Section.findById(section._id).populate({
+      path: "products",
+      select: "name slug images basePrice variants",
+    });
 
     res.status(201).json({
       success: true,
       message: "Section created successfully",
-      data: section,
+      data: populatedSection,
     });
   } catch (error: any) {
     res.status(400).json({
@@ -312,12 +293,15 @@ export const createSection = async (
 };
 
 // @desc    Update section (Admin)
-// @route   PUT /api/sections/:id
+// @route   PUT /api/admin/sections/:id
 export const updateSection = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
+    const { name, description, products, isActive, order, scheduling } =
+      req.body;
+
     const section = await Section.findById(req.params.id);
 
     if (!section) {
@@ -328,41 +312,56 @@ export const updateSection = async (
       return;
     }
 
-    const { name, description, productIds, isActive, order, scheduling } =
-      req.body;
+    // If products are being updated, validate stock
+    if (products && Array.isArray(products)) {
+      const stockCheck = await checkProductsStock(products);
 
-    // If updating products, validate stock
-    if (productIds && Array.isArray(productIds)) {
-      const stockCheck = await validateProductsStock(productIds);
-
-      if (stockCheck.valid.length < section.minProducts) {
+      if (!stockCheck.valid) {
         res.status(400).json({
           success: false,
-          message: `Only ${stockCheck.valid.length} products have stock. Need at least ${section.minProducts}`,
+          message: `Insufficient products with stock. Found ${stockCheck.validProducts.length}, need at least ${section.minProducts}`,
           data: {
-            valid: stockCheck.valid,
-            invalid: stockCheck.invalid,
-            details: stockCheck.details,
+            outOfStock: stockCheck.outOfStock,
+            validProducts: stockCheck.validProducts,
           },
         });
         return;
       }
 
-      section.productIds = stockCheck.valid;
+      section.products = stockCheck.validProducts.map(
+        (_id) => new mongoose.Types.ObjectId(_id),
+      );
 
-      // Clean up metadata for removed products
-      section.pinnedProducts = section.pinnedProducts.filter((id) =>
-        stockCheck.valid.includes(id),
+      section.productPriorities = stockCheck.validProducts.map(
+        (productId, index) => ({
+          product: new mongoose.Types.ObjectId(productId),
+          position: index,
+          isPinned: false,
+          isFeatured: false,
+        }),
       );
-      section.featuredProducts = section.featuredProducts.filter((id) =>
-        stockCheck.valid.includes(id),
-      );
+    }
+
+    // Validate scheduling dates if being updated
+    if (scheduling?.enabled) {
+      if (scheduling.startDate && scheduling.endDate) {
+        const start = new Date(scheduling.startDate);
+        const end = new Date(scheduling.endDate);
+
+        if (end <= start) {
+          res.status(400).json({
+            success: false,
+            message: "End date must be after start date",
+          });
+          return;
+        }
+      }
     }
 
     // Update other fields
     if (name) {
       section.name = name;
-      section.slug = generateSlug(name.en);
+      section.slug = generateSlug(name.en) + `-${Date.now()}`;
     }
     if (description !== undefined) section.description = description;
     if (isActive !== undefined) section.isActive = isActive;
@@ -376,10 +375,15 @@ export const updateSection = async (
 
     await section.save();
 
+    const updatedSection = await Section.findById(section._id).populate({
+      path: "products",
+      select: "name slug images basePrice variants",
+    });
+
     res.status(200).json({
       success: true,
       message: "Section updated successfully",
-      data: section,
+      data: updatedSection,
     });
   } catch (error: any) {
     res.status(400).json({
@@ -390,7 +394,7 @@ export const updateSection = async (
 };
 
 // @desc    Delete section (Admin)
-// @route   DELETE /api/sections/:id
+// @route   DELETE /api/admin/sections/:id
 export const deleteSection = async (
   req: Request,
   res: Response,
@@ -420,12 +424,8 @@ export const deleteSection = async (
   }
 };
 
-// ===================================
-// PRODUCT MANAGEMENT
-// ===================================
-
 // @desc    Add products to section (Admin)
-// @route   POST /api/sections/:id/products
+// @route   POST /api/admin/sections/:id/products
 export const addProductsToSection = async (
   req: Request,
   res: Response,
@@ -436,7 +436,7 @@ export const addProductsToSection = async (
     if (!productIds || !Array.isArray(productIds)) {
       res.status(400).json({
         success: false,
-        message: "productIds array is required",
+        message: "Product IDs array is required",
       });
       return;
     }
@@ -451,12 +451,13 @@ export const addProductsToSection = async (
       return;
     }
 
-    // Validate stock
-    const stockCheck = await validateProductsStock(productIds);
+    // Check stock for new products
+    const stockCheck = await checkProductsStock(productIds);
 
-    // Filter out already existing products
-    const newProducts = stockCheck.valid.filter(
-      (id) => !section.productIds.includes(id),
+    // Add only valid products (avoid duplicates)
+    const existingIds = section.products.map((_id) => _id.toString());
+    const newProducts = stockCheck.validProducts.filter(
+      (id) => !existingIds.includes(id),
     );
 
     if (newProducts.length === 0) {
@@ -467,26 +468,46 @@ export const addProductsToSection = async (
       return;
     }
 
-    // Add products
-    section.productIds.push(...newProducts);
-    section.rebuildPositionMap();
+    section.products.push(
+      ...newProducts.map((_id) => new mongoose.Types.ObjectId(_id)),
+    );
+
+    const newPriorities = newProducts.map((_id) => ({
+      product: new mongoose.Types.ObjectId(_id),
+      position: 0, // or whatever default value you want to use
+      isPinned: false,
+      isFeatured: false,
+      customNote: "", // or whatever default value you want to use
+    }));
+
+    section.productPriorities.push(...newPriorities);
+
     await section.save();
+
+    const updatedSection = await Section.findById(section._id).populate({
+      path: "products",
+      select: "name slug images basePrice variants",
+    });
+    const updatedPriorities = await Section.findById(section._id).populate({
+      path: "productPriorities",
+      select: "name slug images basePrice variants",
+    })
 
     res.status(200).json({
       success: true,
-      message: `Added ${newProducts.length} products`,
-      data: section,
+      message: `Added ${newProducts.length} products to section`,
+      data: {updatedSection, updatedPriorities},
     });
   } catch (error: any) {
     res.status(400).json({
       success: false,
-      message: error.message || "Failed to add products",
+      message: error.message || "Failed to add products to section",
     });
   }
 };
 
 // @desc    Remove product from section (Admin)
-// @route   DELETE /api/sections/:id/products/:productId
+// @route   DELETE /api/admin/sections/:id/products/:productId
 export const removeProductFromSection = async (
   req: Request,
   res: Response,
@@ -502,8 +523,17 @@ export const removeProductFromSection = async (
       return;
     }
 
-    // Check minimum products constraint
-    if (section.productIds.length <= section.minProducts) {
+    const initialCount = section.products.length;
+    section.products = section.products.filter(
+      (id) => id.toString() !== req.params.productId,
+    );
+
+    section.productPriorities = section.productPriorities.filter(
+      (p) => p.product.toString() !== req.params.productId,
+    );
+
+    // Check if removal violates minimum products requirement
+    if (section.products.length < section.minProducts) {
       res.status(400).json({
         success: false,
         message: `Cannot remove product. Section must have at least ${section.minProducts} products`,
@@ -511,9 +541,7 @@ export const removeProductFromSection = async (
       return;
     }
 
-    // const removed = section.removeProduct(req.params.productId);
-    const removed = (section as ISection).removeProduct(req.params.productId);
-    if (!removed) {
+    if (section.products.length === initialCount) {
       res.status(404).json({
         success: false,
         message: "Product not found in section",
@@ -523,26 +551,155 @@ export const removeProductFromSection = async (
 
     await section.save();
 
+    const updatedSection = await Section.findById(section._id).populate({
+      path: "products",
+      select: "name slug images basePrice variants",
+    });
+
     res.status(200).json({
       success: true,
-      message: "Product removed successfully",
-      data: section,
+      message: "Product removed from section",
+      data: updatedSection,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to remove product",
+      message: error.message || "Failed to remove product from section",
+    });
+  }
+};
+
+// @desc    Clean out-of-stock products from section (Admin/Automated)
+// @route   POST /api/admin/sections/:id/clean-stock
+export const cleanOutOfStockProducts = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const section = await Section.findById(req.params.id);
+
+    if (!section) {
+      res.status(404).json({
+        success: false,
+        message: "Section not found",
+      });
+      return;
+    }
+
+    const productIds = section.products.map((_id) => _id.toString());
+    const stockCheck = await checkProductsStock(productIds);
+
+    const removedCount =
+      section.products.length - stockCheck.validProducts.length;
+
+    section.products = stockCheck.validProducts.map(
+      (_id) => new mongoose.Types.ObjectId(_id),
+    );
+
+    section.productPriorities = section.productPriorities.filter(
+      (p) => stockCheck.validProducts.includes(p.product.toString()),
+    );
+
+    // Check if cleaning violates minimum requirement
+    if (section.products.length < section.minProducts) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot clean. Would result in ${section.products.length} products, need at least ${section.minProducts}`,
+        data: {
+          currentProducts: section.products.length,
+          minRequired: section.minProducts,
+          wouldRemove: removedCount,
+        },
+      });
+      return;
+    }
+
+    await section.save();
+
+    const updatedSection = await Section.findById(section._id).populate({
+      path: "products",
+      select: "name slug images basePrice variants",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Removed ${removedCount} out-of-stock products`,
+      data: {
+        section: updatedSection,
+        removedCount,
+        outOfStockProducts: stockCheck.outOfStock,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to clean out-of-stock products",
+    });
+  }
+};
+
+// @desc    Clean all sections (remove out-of-stock products from all sections)
+// @route   POST /api/admin/sections/clean-all-stock
+export const cleanAllSectionsStock = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sections = await Section.find({ isActive: true });
+
+    let totalCleaned = 0;
+    const results = [];
+
+    for (const section of sections) {
+      const productIds = section.products.map((_id) => _id.toString());
+      const stockCheck = await checkProductsStock(productIds);
+
+      const removedCount =
+        section.products.length - stockCheck.validProducts.length;
+
+      // Only update if we can maintain minimum products
+      if (stockCheck.validProducts.length >= section.minProducts) {
+        section.products = stockCheck.validProducts.map(
+          (_id) => new mongoose.Types.ObjectId(_id),
+        );
+        await section.save();
+        totalCleaned += removedCount;
+
+        results.push({
+          sectionId: section._id,
+          sectionName: section.name.en,
+          removedCount,
+          remainingProducts: section.products.length,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Cleaned ${totalCleaned} out-of-stock products from ${results.length} sections`,
+      data: {
+        totalCleaned,
+        sectionsProcessed: results.length,
+        details: results,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to clean all sections",
     });
   }
 };
 
 export default {
+  getSections,
   getPublicSections,
   getSection,
-  getSections,
   createSection,
   updateSection,
   deleteSection,
   addProductsToSection,
   removeProductFromSection,
+  cleanOutOfStockProducts,
+  cleanAllSectionsStock,
 };

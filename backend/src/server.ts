@@ -102,7 +102,7 @@ app.listen(PORT, () => {
   );
 
   // Schedule automatic section cleanup (runs every 24 hours)
-  scheduleAutoCleanup(24);
+  // scheduleAutoCleanup(24);
 });
 
 export default app;

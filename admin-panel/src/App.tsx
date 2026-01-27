@@ -127,8 +127,8 @@ function App() {
             <Route path="sections">
               <Route index element={<SectionList />} />
               <Route path="create" element={<SectionCreate />} />
-    <Route path="edit/:id" element={<SectionEdit />} />
-    <Route path=":id" element={<SectionDetail />} />
+              <Route path="edit/:id" element={<SectionEdit />} />
+              <Route path=":id" element={<SectionDetail />} />
             </Route>
 
             {/* Inventory */}
