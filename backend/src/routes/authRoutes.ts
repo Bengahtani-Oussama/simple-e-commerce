@@ -142,6 +142,41 @@ router.post('/forgot-password', forgotPassword);
  *       400:
  *         description: Invalid or expired token
  */
+// Add a GET route to serve the HTML page with deep link
+router.get('/reset-password/:token', (req, res) => {
+  const { token } = req.params;
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Algeria Shop - Redirecting</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="text-align: center; padding-top: 50px; font-family: sans-serif; background-color: #f9fafb;">
+        <div style="max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+          <h2 style="color: #4F46E5;">الجزائر شوب</h2>
+          <p style="color: #374151;">اضغط على الزر أدناه لإعادة تعيين كلمة المرور في التطبيق</p>
+          
+          <a href="algeriashop://reset-password/${token}" 
+             style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px;">
+             فتح التطبيق الآن
+          </a>
+        </div>
+
+        <script>
+          // Open the app automatically
+          window.onload = function() {
+            window.location.href = "algeriashop://reset-password/${token}";
+          };
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+// 2. Handle the POST request to actually reset the password
 router.post('/reset-password/:token', resetPassword);
 
 /**
