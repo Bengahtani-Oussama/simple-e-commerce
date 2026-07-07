@@ -1,0 +1,10 @@
+- fix variant in dashboard admin 
+- fix variant  order | inventory | analys 
+- fix variant in client side
+- NextAuth 
+- deployment ( github actions )
+- show staff logs 
+- add socialmedia section admin/settings
+- fix routing / redirect (client side)
+
+
