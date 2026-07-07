@@ -1,12 +1,17 @@
-import { Request, Response } from 'express';
-import Order from '../models/Order';
-import Product from '../models/Product';
-import User from '../models/User';
-import { sendEmail } from '../utils/sendEmail';
+import { Request, Response } from "express";
+import Order from "../models/Order";
+import Product from "../models/Product";
+import User from "../models/User";
+import { sendEmail } from "../utils/sendEmail";
+import { AuthRequest } from "../types";
 
-// @desc    Get all orders (Admin)
-// @route   GET /api/admin/orders
-export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
+// ============================================
+// GET ALL ORDERS (ADMIN)
+// ============================================
+export const getAllOrders = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const {
       status,
@@ -15,21 +20,24 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
       search,
       startDate,
       endDate,
+      wilaya,
       page = 1,
       limit = 20,
     } = req.query;
 
     const filter: any = {};
 
-    if (status) filter.orderStatus = status;
-    if (paymentStatus) filter.paymentStatus = paymentStatus;
-    if (hasReturn !== undefined) filter.hasReturn = hasReturn === 'true';
+    if (status) filter["status.current"] = status;
+    if (paymentStatus) filter["payment.status"] = paymentStatus;
+    if (hasReturn !== undefined)
+      filter["returns.hasReturn"] = hasReturn === "true";
+    if (wilaya) filter["shipping.address.wilaya"] = wilaya;
 
     // Search by order number or customer name
     if (search) {
       filter.$or = [
-        { orderNumber: new RegExp(search as string, 'i') },
-        { 'shippingAddress.fullName': new RegExp(search as string, 'i') },
+        { orderNumber: new RegExp(search as string, "i") },
+        { "shipping.address.fullName": new RegExp(search as string, "i") },
       ];
     }
 
@@ -45,7 +53,7 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
     const skip = (pageNum - 1) * limitNum;
 
     const orders = await Order.find(filter)
-      .populate('user', 'firstName lastName email phone')
+      .populate("user", "firstName lastName email phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -55,12 +63,27 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
     // Calculate statistics
     const stats = {
       totalOrders: total,
-      pendingOrders: await Order.countDocuments({ orderStatus: 'pending' }),
-      confirmedOrders: await Order.countDocuments({ orderStatus: 'confirmed' }),
-      shippedOrders: await Order.countDocuments({ orderStatus: 'shipped' }),
-      deliveredOrders: await Order.countDocuments({ orderStatus: 'delivered' }),
-      cancelledOrders: await Order.countDocuments({ orderStatus: 'cancelled' }),
-      ordersWithReturns: await Order.countDocuments({ hasReturn: true }),
+      pendingOrders: await Order.countDocuments({
+        "status.current": "pending",
+      }),
+      confirmedOrders: await Order.countDocuments({
+        "status.current": "confirmed",
+      }),
+      processingOrders: await Order.countDocuments({
+        "status.current": "processing",
+      }),
+      shippedOrders: await Order.countDocuments({
+        "status.current": "shipped",
+      }),
+      deliveredOrders: await Order.countDocuments({
+        "status.current": "delivered",
+      }),
+      cancelledOrders: await Order.countDocuments({
+        "status.current": "cancelled",
+      }),
+      ordersWithReturns: await Order.countDocuments({
+        "returns.hasReturn": true,
+      }),
     };
 
     res.status(200).json({
@@ -75,22 +98,30 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get orders',
+      message: error.message || "Failed to get orders",
     });
   }
 };
 
-// @desc    Get single order (Admin)
-// @route   GET /api/admin/orders/:id
-export const getOrderById = async (req: Request, res: Response): Promise<void> => {
+// ============================================
+// GET SINGLE ORDER (ADMIN)
+// ============================================
+export const getOrderById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('user', 'firstName lastName email phone');
+      .populate("user", "firstName lastName email phone")
+      .populate({
+        path: "status.history.updatedBy",
+        select: "name email",
+      });
 
     if (!order) {
       res.status(404).json({
         success: false,
-        message: 'Order not found',
+        message: "Order not found",
       });
       return;
     }
@@ -102,37 +133,42 @@ export const getOrderById = async (req: Request, res: Response): Promise<void> =
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get order',
+      message: error.message || "Failed to get order",
     });
   }
 };
 
-// @desc    Update order status (Admin)
-// @route   PUT /api/admin/orders/:id/status
-export const updateOrderStatus = async (req: Request, res: Response): Promise<void> => {
+// ============================================
+// UPDATE ORDER STATUS (ADMIN)
+// ============================================
+export const updateOrderStatus = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    const { orderStatus, trackingNumber, estimatedDeliveryDate, adminNote } = req.body;
+    const { orderStatus, trackingNumber, estimatedDeliveryDate, adminNote } =
+      req.body;
 
-    const order = await Order.findById(req.params.id).populate('user');
+    const order = await Order.findById(req.params.id).populate("user");
     if (!order) {
       res.status(404).json({
         success: false,
-        message: 'Order not found',
+        message: "Order not found",
       });
       return;
     }
 
-    // Update status
-    if (orderStatus) order.orderStatus = orderStatus;
-    if (trackingNumber) order.trackingNumber = trackingNumber;
-    if (estimatedDeliveryDate) order.estimatedDeliveryDate = new Date(estimatedDeliveryDate);
-    if (adminNote) order.adminNote = adminNote;
-
-    // Mark as delivered
-    if (orderStatus === 'delivered' && !order.deliveredAt) {
-      order.deliveredAt = new Date();
-      order.paymentStatus = 'paid'; // Assume paid on delivery
+    // Update status using the model method
+    if (orderStatus) {
+      order.updateStatus(orderStatus, adminNote, req.user?.id);
     }
+
+    // Update tracking info
+    if (trackingNumber) order.shipping.trackingNumber = trackingNumber;
+    if (estimatedDeliveryDate) {
+      order.shipping.estimatedDeliveryDate = new Date(estimatedDeliveryDate);
+    }
+    if (adminNote) order.notes.admin = adminNote;
 
     await order.save();
 
@@ -142,97 +178,169 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
       await sendEmail({
         to: user.email,
         subject: `Order ${order.orderNumber} - Status Update`,
-        html: getOrderStatusUpdateEmail(order, orderStatus, 'ar'),
+        html: getOrderStatusUpdateEmail(order, orderStatus, "ar"),
       });
     } catch (emailError) {
-      console.error('Failed to send status update email:', emailError);
+      console.error("Failed to send status update email:", emailError);
     }
 
     res.status(200).json({
       success: true,
-      message: 'Order status updated successfully',
+      message: "Order status updated successfully",
       data: order,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update order status',
+      message: error.message || "Failed to update order status",
     });
   }
 };
 
-// @desc    Process item return (Admin)
-// @route   PUT /api/admin/orders/:id/items/:itemId/return
-export const processReturn = async (req: Request, res: Response): Promise<void> => {
+// ============================================
+// PROCESS ITEM RETURN (ADMIN)
+// ============================================
+export const processReturn = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    const { returnStatus, returnQuantity, returnReason } = req.body;
+    const { returnStatus, returnQuantity, adminNote } = req.body;
 
     const order = await Order.findById(req.params.id);
     if (!order) {
       res.status(404).json({
         success: false,
-        message: 'Order not found',
+        message: "Order not found",
       });
       return;
     }
 
-    // Find item using find() instead of id()
-    const item = order.items.find(
-      (item) => item._id?.toString() === req.params.itemId
+    // const item = order.items.id(req.params.itemId);
+
+    const itemId = req.params.itemId;
+    const itemIndex = order.items.findIndex(
+      (item) => item?._id?.toString() === itemId,
     );
+    if (itemIndex === -1) {
+      // Item not found in order
+      res.status(404).json({
+        success: false,
+        message: "Item not found in order",
+      });
+      return;
+    }
+
+    const item = order.items[itemIndex];
+    if (!item || !item._id) {
+      // Item or _id not found in order
+      res.status(404).json({
+        success: false,
+        message: "Item not found in order",
+      });
+      return;
+    }
     if (!item) {
       res.status(404).json({
         success: false,
-        message: 'Item not found in order',
+        message: "Item not found in order",
       });
       return;
     }
 
     // Validate return quantity
-    if (returnQuantity > item.quantity) {
+    const requestedQuantity = item.returnInfo?.quantity || 0;
+    const quantityToProcess = returnQuantity || requestedQuantity;
+
+    if (quantityToProcess > item.quantity) {
       res.status(400).json({
         success: false,
-        message: 'Return quantity cannot exceed ordered quantity',
+        message: "Return quantity cannot exceed ordered quantity",
       });
       return;
     }
 
     // Update return status
-    item.returnStatus = returnStatus;
-    item.returnQuantity = returnQuantity;
-    if (returnReason) item.returnReason = returnReason;
+    if (!item.returnInfo) {
+      item.returnInfo = {
+        status: "none",
+        quantity: 0,
+      };
+    }
 
-    // If return is approved or completed, restore stock
-    if (returnStatus === 'approved' || returnStatus === 'completed') {
-      await Product.updateOne(
-        { _id: item.product, 'variants._id': item.variant },
-        { $inc: { 'variants.$.stock': returnQuantity } }
-      );
+    item.returnInfo.status = returnStatus;
+    item.returnInfo.quantity = quantityToProcess;
+    item.returnInfo.processedAt = new Date();
+
+    // If return is approved or completed, restore stock and calculate refund
+    if (returnStatus === "approved" || returnStatus === "completed") {
+      const product = await Product.findById(item.product);
+
+      if (product) {
+        if (product.type === "configurable") {
+          const variantIndex = product.variants.findIndex(
+            (v) => v._id?.toString() === item.variant.toString(),
+          );
+
+          if (
+            variantIndex !== -1 &&
+            product.variants[variantIndex].inventory.trackInventory
+          ) {
+            product.variants[variantIndex].inventory.stock += quantityToProcess;
+
+            // Restore status if it was out of stock
+            if (product.variants[variantIndex].status === "out_of_stock") {
+              product.variants[variantIndex].status = "active";
+            }
+          }
+        } else {
+          // Simple product
+          if (product.baseInventory?.trackInventory) {
+            product.baseInventory.stock += quantityToProcess;
+          }
+        }
+
+        await product.save();
+      }
 
       // Calculate return total
-      const returnAmount = item.price * returnQuantity;
-      order.returnTotal += returnAmount;
-      order.hasReturn = true;
+      const returnAmount = item.pricing.price * quantityToProcess;
+      order.returns.totalRefund += returnAmount;
+      order.returns.hasReturn = true;
+
+      if (!order.returns.items.includes(req.params.itemId as any)) {
+        order.returns.items.push(req.params.itemId as any);
+      }
+    }
+
+    // Add admin note
+    if (adminNote) {
+      order.notes.internal =
+        (order.notes.internal || "") + `\n[Return] ${adminNote}`;
     }
 
     await order.save();
 
     res.status(200).json({
       success: true,
-      message: 'Return processed successfully',
+      message: "Return processed successfully",
       data: order,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to process return',
+      message: error.message || "Failed to process return",
     });
   }
 };
 
-// @desc    Get order statistics (Admin)
-// @route   GET /api/admin/orders/stats
-export const getOrderStats = async (req: Request, res: Response): Promise<void> => {
+// ============================================
+// GET ORDER STATISTICS (ADMIN)
+// ============================================
+export const getOrderStats = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -245,85 +353,265 @@ export const getOrderStats = async (req: Request, res: Response): Promise<void> 
 
     // Total orders and revenue
     const totalOrders = await Order.countDocuments(dateFilter);
-    const totalRevenue = await Order.aggregate([
-      { $match: { ...dateFilter, orderStatus: { $ne: 'cancelled' } } },
-      { $group: { _id: null, total: { $sum: '$total' } } },
+
+    const revenueData = await Order.aggregate([
+      { $match: { ...dateFilter, "status.current": { $ne: "cancelled" } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$pricing.total" },
+          subtotal: { $sum: "$pricing.subtotal" },
+          shipping: { $sum: "$pricing.shippingCost" },
+          discounts: { $sum: "$pricing.couponDiscount" },
+        },
+      },
     ]);
 
     // Orders by status
     const ordersByStatus = await Order.aggregate([
       { $match: dateFilter },
-      { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
+      { $group: { _id: "$status.current", count: { $sum: 1 } } },
+    ]);
+
+    // Orders by payment status
+    const ordersByPaymentStatus = await Order.aggregate([
+      { $match: dateFilter },
+      { $group: { _id: "$payment.status", count: { $sum: 1 } } },
     ]);
 
     // Orders by wilaya (top 10)
     const ordersByWilaya = await Order.aggregate([
       { $match: dateFilter },
-      { $group: { _id: '$shippingAddress.wilaya', count: { $sum: 1 } } },
+      { $group: { _id: "$shipping.address.wilaya", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },
     ]);
 
-    // Top selling products
-    const topProducts = await Order.aggregate([
+    // Orders by shipping method
+    const ordersByShippingMethod = await Order.aggregate([
       { $match: dateFilter },
-      { $unwind: '$items' },
+      { $group: { _id: "$shipping.method", count: { $sum: 1 } } },
+    ]);
+
+    // Top selling products (by variant)
+    const topProducts = await Order.aggregate([
+      { $match: { ...dateFilter, "status.current": { $ne: "cancelled" } } },
+      { $unwind: "$items" },
       {
         $group: {
-          _id: '$items.product',
-          totalSold: { $sum: '$items.quantity' },
-          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+          _id: "$items.sku",
+          productName: { $first: "$items.name" },
+          totalSold: { $sum: "$items.quantity" },
+          revenue: {
+            $sum: { $multiply: ["$items.pricing.price", "$items.quantity"] },
+          },
         },
       },
       { $sort: { totalSold: -1 } },
       { $limit: 10 },
     ]);
 
+    // Average order value
+    const avgOrderValue = await Order.aggregate([
+      { $match: { ...dateFilter, "status.current": { $ne: "cancelled" } } },
+      { $group: { _id: null, avg: { $avg: "$pricing.total" } } },
+    ]);
+
+    // Orders over time (daily)
+    const ordersOverTime = await Order.aggregate([
+      { $match: dateFilter },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+          revenue: { $sum: "$pricing.total" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
     res.status(200).json({
       success: true,
       data: {
-        totalOrders,
-        totalRevenue: totalRevenue[0]?.total || 0,
+        summary: {
+          totalOrders,
+          totalRevenue: revenueData[0]?.total || 0,
+          totalSubtotal: revenueData[0]?.subtotal || 0,
+          totalShipping: revenueData[0]?.shipping || 0,
+          totalDiscounts: revenueData[0]?.discounts || 0,
+          averageOrderValue: avgOrderValue[0]?.avg || 0,
+        },
         ordersByStatus,
+        ordersByPaymentStatus,
         ordersByWilaya,
+        ordersByShippingMethod,
         topProducts,
+        ordersOverTime,
       },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to get statistics',
+      message: error.message || "Failed to get statistics",
     });
   }
 };
 
-// Email template for status updates
-function getOrderStatusUpdateEmail(order: any, status: string, lang: 'ar' | 'en' | 'fr'): string {
+// ============================================
+// BULK UPDATE ORDERS
+// ============================================
+export const bulkUpdateOrders = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { orderIds, status, adminNote } = req.body;
+
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Order IDs array is required",
+      });
+      return;
+    }
+
+    if (!status) {
+      res.status(400).json({
+        success: false,
+        message: "Status is required",
+      });
+      return;
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const orderId of orderIds) {
+      try {
+        const order = await Order.findById(orderId);
+        if (!order) {
+          errors.push({ orderId, error: "Order not found" });
+          continue;
+        }
+
+        order.updateStatus(status, adminNote, req.user?.id);
+        await order.save();
+
+        results.push({ orderId, orderNumber: order.orderNumber });
+      } catch (error: any) {
+        errors.push({ orderId, error: error.message });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${results.length} orders updated successfully`,
+      data: {
+        successful: results,
+        failed: errors,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to bulk update orders",
+    });
+  }
+};
+
+// ============================================
+// GET RETURN REQUESTS
+// ============================================
+export const getReturnRequests = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+
+    const filter: any = { "returns.hasReturn": true };
+
+    if (status && status !== "all") {
+      filter["items.returnInfo.status"] = status;
+    }
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const orders = await Order.find(filter)
+      .populate("user", "firstName lastName email phone")
+      .sort({ "items.returnInfo.requestedAt": -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await Order.countDocuments(filter);
+
+    // Extract only items with return requests
+    const returnRequests = orders.flatMap((order) =>
+      order.items
+        .filter((item) => item.returnInfo && item.returnInfo.status !== "none")
+        .map((item) => ({
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          itemId: item._id,
+          item,
+          customer: order.user,
+          requestedAt: item.returnInfo?.requestedAt,
+          status: item.returnInfo?.status,
+        })),
+    );
+
+    res.status(200).json({
+      success: true,
+      count: returnRequests.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: returnRequests,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get return requests",
+    });
+  }
+};
+
+// ============================================
+// EMAIL TEMPLATE FOR STATUS UPDATES
+// ============================================
+function getOrderStatusUpdateEmail(
+  order: any,
+  status: string,
+  lang: "ar" | "en" | "fr",
+): string {
   const statusMessages = {
     ar: {
-      confirmed: 'تم تأكيد طلبك',
-      processing: 'جاري تجهيز طلبك',
-      shipped: 'تم شحن طلبك',
-      delivered: 'تم توصيل طلبك',
-      cancelled: 'تم إلغاء طلبك',
+      confirmed: "تم تأكيد طلبك",
+      processing: "جاري تجهيز طلبك",
+      shipped: "تم شحن طلبك",
+      delivered: "تم توصيل طلبك",
+      cancelled: "تم إلغاء طلبك",
     },
     en: {
-      confirmed: 'Your order has been confirmed',
-      processing: 'Your order is being processed',
-      shipped: 'Your order has been shipped',
-      delivered: 'Your order has been delivered',
-      cancelled: 'Your order has been cancelled',
+      confirmed: "Your order has been confirmed",
+      processing: "Your order is being processed",
+      shipped: "Your order has been shipped",
+      delivered: "Your order has been delivered",
+      cancelled: "Your order has been cancelled",
     },
     fr: {
-      confirmed: 'Votre commande a été confirmée',
-      processing: 'Votre commande est en cours de traitement',
-      shipped: 'Votre commande a été expédiée',
-      delivered: 'Votre commande a été livrée',
-      cancelled: 'Votre commande a été annulée',
+      confirmed: "Votre commande a été confirmée",
+      processing: "Votre commande est en cours de traitement",
+      shipped: "Votre commande a été expédiée",
+      delivered: "Votre commande a été livrée",
+      cancelled: "Votre commande a été annulée",
     },
   };
 
-  const message = statusMessages[lang][status as keyof typeof statusMessages.ar];
+  const message =
+    statusMessages[lang][status as keyof typeof statusMessages.ar];
 
   return `
     <!DOCTYPE html>
@@ -342,7 +630,8 @@ function getOrderStatusUpdateEmail(order: any, status: string, lang: 'ar' | 'en'
           <h2>${message}</h2>
           <p>Order #${order.orderNumber}</p>
         </div>
-        ${order.trackingNumber ? `<p><strong>Tracking Number:</strong> ${order.trackingNumber}</p>` : ''}
+        ${order.shipping.trackingNumber ? `<p><strong>Tracking Number:</strong> ${order.shipping.trackingNumber}</p>` : ""}
+        ${order.shipping.estimatedDeliveryDate ? `<p><strong>Estimated Delivery:</strong> ${new Date(order.shipping.estimatedDeliveryDate).toLocaleDateString()}</p>` : ""}
       </div>
     </body>
     </html>

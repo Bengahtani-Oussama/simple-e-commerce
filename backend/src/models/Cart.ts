@@ -1,34 +1,81 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// ============================================
+// CART ITEM INTERFACE
+// ============================================
 export interface ICartItem {
   _id?: mongoose.Types.ObjectId;
   product: mongoose.Types.ObjectId;
   variant: mongoose.Types.ObjectId; // Reference to specific variant
   sku: string;
+  
+  // Product name (for quick display)
   name: {
     ar: string;
     en: string;
     fr: string;
   };
-  variantDetails: {
-    size?: string;
-    color?: string;
-    material?: string;
-    customOptions?: { [key: string]: string };
+  
+  // Selected attributes for this variant
+  selectedAttributes: {
+    [optionCode: string]: {
+      code: string;
+      label: {
+        ar: string;
+        en: string;
+        fr: string;
+      };
+      value?: string; // For attributes like storage: "128GB"
+      hexColor?: string; // For color attributes
+    };
   };
-  price: number;
+  
+  // Pricing (snapshot at time of adding to cart)
+  pricing: {
+    price: number;
+    compareAtPrice?: number;
+  };
+  
+  // Quantity
   quantity: number;
-  image?: string;
-  stock: number; // Current stock available
+  
+  // Media
+  image?: string; // Main variant image
+  
+  // Availability (checked at cart load)
+  availability: {
+    inStock: boolean;
+    currentStock: number;
+    allowBackorder: boolean;
+  };
+  
+  // Product type for validation
+  productType: 'simple' | 'configurable';
 }
 
+// ============================================
+// CART INTERFACE
+// ============================================
 export interface ICart extends Document {
   user: mongoose.Types.ObjectId;
   items: ICartItem[];
-  subtotal: number;
+  
+  // Pricing summary
+  summary: {
+    subtotal: number;
+    itemCount: number;
+  };
+  
+  // Cart metadata
+  lastActivity: Date;
+  
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ============================================
+// SCHEMAS
+// ============================================
 
 const cartItemSchema = new Schema<ICartItem>({
   product: {
@@ -43,33 +90,52 @@ const cartItemSchema = new Schema<ICartItem>({
   sku: {
     type: String,
     required: true,
+    index: true,
   },
   name: {
-    ar: String,
-    en: String,
-    fr: String,
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    fr: { type: String, required: true },
   },
-  variantDetails: {
-    size: String,
-    color: String,
-    material: String,
-    customOptions: {
-      type: Map,
-      of: String,
-    },
-  },
-  price: {
-    type: Number,
+  selectedAttributes: {
+    type: Map,
+    of: Schema.Types.Mixed,
     required: true,
-    min: 0,
+  },
+  pricing: {
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    compareAtPrice: Number,
   },
   quantity: {
     type: Number,
     required: true,
     min: 1,
+    default: 1,
   },
   image: String,
-  stock: Number,
+  availability: {
+    inStock: {
+      type: Boolean,
+      default: true,
+    },
+    currentStock: {
+      type: Number,
+      default: 0,
+    },
+    allowBackorder: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  productType: {
+    type: String,
+    enum: ['simple', 'configurable'],
+    required: true,
+  },
 });
 
 const cartSchema = new Schema<ICart>(
@@ -81,10 +147,25 @@ const cartSchema = new Schema<ICart>(
       unique: true,
       index: true,
     },
-    items: [cartItemSchema],
-    subtotal: {
-      type: Number,
-      default: 0,
+    items: {
+      type: [cartItemSchema],
+      default: [],
+    },
+    summary: {
+      subtotal: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      itemCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+    },
+    lastActivity: {
+      type: Date,
+      default: Date.now,
     },
   },
   {
@@ -92,10 +173,54 @@ const cartSchema = new Schema<ICart>(
   }
 );
 
-// Calculate subtotal before saving
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+// Update summary before saving
 cartSchema.pre('save', function (next) {
-  this.subtotal = this.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  this.summary.subtotal = this.items.reduce(
+    (sum, item) => sum + item.pricing.price * item.quantity,
+    0
+  );
+  
+  this.summary.itemCount = this.items.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+  
+  this.lastActivity = new Date();
+  
   next();
 });
+
+// ============================================
+// INDEXES
+// ============================================
+cartSchema.index({ lastActivity: 1 }); // For cleanup of abandoned carts
+cartSchema.index({ 'items.sku': 1 });
+
+// ============================================
+// VIRTUALS
+// ============================================
+
+// Check if cart has any out-of-stock items
+cartSchema.virtual('hasOutOfStockItems').get(function () {
+  return this.items.some(item => !item.availability.inStock && !item.availability.allowBackorder);
+});
+
+// Get total savings (compareAt - price)
+cartSchema.virtual('totalSavings').get(function () {
+  return this.items.reduce((savings, item) => {
+    if (item.pricing.compareAtPrice) {
+      const itemSavings = (item.pricing.compareAtPrice - item.pricing.price) * item.quantity;
+      return savings + itemSavings;
+    }
+    return savings;
+  }, 0);
+});
+
+cartSchema.set('toJSON', { virtuals: true });
+cartSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model<ICart>('Cart', cartSchema);

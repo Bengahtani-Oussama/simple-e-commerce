@@ -5,6 +5,7 @@ import {
   updateCartItem,
   removeFromCart,
   clearCart,
+  validateCart,
 } from '../controllers/cartController';
 import { protect, isCustomer } from '../middleware/authMiddleware';
 
@@ -24,8 +25,6 @@ router.use(protect, isCustomer);
  *     responses:
  *       200:
  *         description: Cart retrieved successfully
- *       401:
- *         description: Unauthorized
  */
 router.get('/', getCart);
 
@@ -43,20 +42,23 @@ router.get('/', getCart);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [productId, quantity, variantId]
+ *             required: [productId]
  *             properties:
  *               productId:
  *                 type: string
  *               variantId:
  *                 type: string
+ *                 description: Required for configurable products
  *               quantity:
  *                 type: number
  *                 minimum: 1
+ *                 default: 1
+ *               selectedAttributes:
+ *                 type: object
+ *                 description: Selected attributes (optional, for reference)
  *     responses:
  *       200:
  *         description: Item added to cart successfully
- *       400:
- *         description: Invalid input
  */
 router.post('/items', addToCart);
 
@@ -88,8 +90,6 @@ router.post('/items', addToCart);
  *     responses:
  *       200:
  *         description: Item updated successfully
- *       404:
- *         description: Item not found in cart
  */
 router.put('/items/:itemId', updateCartItem);
 
@@ -110,8 +110,6 @@ router.put('/items/:itemId', updateCartItem);
  *     responses:
  *       200:
  *         description: Item removed from cart
- *       404:
- *         description: Item not found in cart
  */
 router.delete('/items/:itemId', removeFromCart);
 
@@ -128,5 +126,43 @@ router.delete('/items/:itemId', removeFromCart);
  *         description: Cart cleared successfully
  */
 router.delete('/', clearCart);
+
+// ============================================
+// NEW ENDPOINT
+// ============================================
+
+/**
+ * @swagger
+ * /cart/validate:
+ *   post:
+ *     summary: Validate cart before checkout (NEW)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Validates all cart items for stock availability, price changes, and product availability
+ *     responses:
+ *       200:
+ *         description: Cart is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 valid:
+ *                   type: boolean
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 warnings:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Cart has validation errors
+ */
+router.post('/validate', validateCart);
 
 export default router;

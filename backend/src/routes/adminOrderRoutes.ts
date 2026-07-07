@@ -5,6 +5,8 @@ import {
   updateOrderStatus,
   processReturn,
   getOrderStats,
+  bulkUpdateOrders,
+  getReturnRequests,
 } from '../controllers/adminOrderController';
 import { protect, isAdmin } from '../middleware/authMiddleware';
 
@@ -21,6 +23,17 @@ router.use(protect, isAdmin);
  *     tags: [Admin - Orders]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Order statistics retrieved successfully
@@ -48,16 +61,34 @@ router.get('/stats', getOrderStats);
  *         name: status
  *         schema:
  *           type: string
+ *           enum: [pending, confirmed, processing, shipped, delivered, cancelled]
  *       - in: query
- *         name: dateFrom
+ *         name: paymentStatus
+ *         schema:
+ *           type: string
+ *           enum: [pending, paid, failed, refunded]
+ *       - in: query
+ *         name: hasReturn
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
  *         schema:
  *           type: string
  *           format: date
  *       - in: query
- *         name: dateTo
+ *         name: endDate
  *         schema:
  *           type: string
  *           format: date
+ *       - in: query
+ *         name: wilaya
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Orders retrieved successfully
@@ -81,8 +112,6 @@ router.get('/', getAllOrders);
  *     responses:
  *       200:
  *         description: Order retrieved successfully
- *       404:
- *         description: Order not found
  */
 router.get('/:id', getOrderById);
 
@@ -106,18 +135,20 @@ router.get('/:id', getOrderById);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [status]
  *             properties:
- *               status:
+ *               orderStatus:
  *                 type: string
- *                 enum: [pending, processing, shipped, delivered, cancelled]
- *               notes:
+ *                 enum: [pending, confirmed, processing, shipped, delivered, cancelled]
+ *               trackingNumber:
+ *                 type: string
+ *               estimatedDeliveryDate:
+ *                 type: string
+ *                 format: date
+ *               adminNote:
  *                 type: string
  *     responses:
  *       200:
  *         description: Order status updated successfully
- *       404:
- *         description: Order not found
  */
 router.put('/:id/status', updateOrderStatus);
 
@@ -146,18 +177,82 @@ router.put('/:id/status', updateOrderStatus);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [reason]
+ *             required: [returnStatus]
  *             properties:
- *               reason:
+ *               returnStatus:
  *                 type: string
- *               notes:
+ *                 enum: [requested, approved, rejected, completed]
+ *               returnQuantity:
+ *                 type: number
+ *               adminNote:
  *                 type: string
  *     responses:
  *       200:
  *         description: Return processed successfully
- *       404:
- *         description: Order or item not found
  */
 router.put('/:id/items/:itemId/return', processReturn);
+
+// ============================================
+// NEW ENDPOINTS
+// ============================================
+
+/**
+ * @swagger
+ * /admin/orders/bulk-update:
+ *   post:
+ *     summary: Bulk update order statuses (NEW)
+ *     tags: [Admin - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [orderIds, status]
+ *             properties:
+ *               orderIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               status:
+ *                 type: string
+ *                 enum: [pending, confirmed, processing, shipped, delivered, cancelled]
+ *               adminNote:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Orders updated successfully
+ */
+router.post('/bulk-update', bulkUpdateOrders);
+
+/**
+ * @swagger
+ * /admin/orders/returns:
+ *   get:
+ *     summary: Get all return requests (NEW)
+ *     tags: [Admin - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [all, requested, approved, rejected, completed]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Return requests retrieved successfully
+ */
+router.get('/returns', getReturnRequests);
 
 export default router;

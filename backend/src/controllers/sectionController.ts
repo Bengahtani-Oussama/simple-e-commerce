@@ -33,10 +33,10 @@ const checkProductsStock = async (
 
     // Check if product has any variant with stock > 0
     const hasStock = product.variants.some(
-      (variant) => variant.stock > 0 && variant.isActive,
+      (variant) => variant.inventory.stock > 0 && variant.status === "active",
     );
 
-    if (hasStock && product.isActive) {
+    if (hasStock && product.status === "active") {
       validProducts.push(productId);
     } else {
       outOfStock.push(productId);
@@ -120,7 +120,8 @@ export const getPublicSections = async (
         const productsWithStock = sectionObj.products.filter((product: any) => {
           if (!product) return false;
           return product.variants.some(
-            (variant: any) => variant.stock > 0 && variant.isActive,
+            (variant: any) =>
+              variant.inventory.stock > 0 && variant.status === "active",
           );
         });
 
@@ -491,12 +492,12 @@ export const addProductsToSection = async (
     const updatedPriorities = await Section.findById(section._id).populate({
       path: "productPriorities",
       select: "name slug images basePrice variants",
-    })
+    });
 
     res.status(200).json({
       success: true,
       message: `Added ${newProducts.length} products to section`,
-      data: {updatedSection, updatedPriorities},
+      data: { updatedSection, updatedPriorities },
     });
   } catch (error: any) {
     res.status(400).json({
@@ -596,8 +597,8 @@ export const cleanOutOfStockProducts = async (
       (_id) => new mongoose.Types.ObjectId(_id),
     );
 
-    section.productPriorities = section.productPriorities.filter(
-      (p) => stockCheck.validProducts.includes(p.product.toString()),
+    section.productPriorities = section.productPriorities.filter((p) =>
+      stockCheck.validProducts.includes(p.product.toString()),
     );
 
     // Check if cleaning violates minimum requirement

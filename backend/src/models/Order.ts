@@ -1,31 +1,64 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+// ============================================
+// ORDER ITEM INTERFACE
+// ============================================
 export interface IOrderItem {
   _id?: mongoose.Types.ObjectId;
   product: mongoose.Types.ObjectId;
   variant: mongoose.Types.ObjectId;
   sku: string;
+  
+  // Product name (snapshot at order time)
   name: {
     ar: string;
     en: string;
     fr: string;
   };
-  variantDetails: {
-    size?: string;
-    color?: string;
-    material?: string;
-    customOptions?: { [key: string]: string };
+  
+  // Selected attributes (snapshot)
+  selectedAttributes: {
+    [optionCode: string]: {
+      code: string;
+      label: {
+        ar: string;
+        en: string;
+        fr: string;
+      };
+      value?: string;
+      hexColor?: string;
+    };
   };
-  price: number;
+  
+  // Pricing (snapshot at order time)
+  pricing: {
+    price: number;
+    compareAtPrice?: number;
+    cost?: number; // For profit calculation
+  };
+  
+  // Quantity
   quantity: number;
+  
+  // Media
   image?: string;
-
+  
+  // Product type
+  productType: 'simple' | 'configurable';
+  
   // Return tracking
-  returnStatus?: "none" | "requested" | "approved" | "rejected" | "completed";
-  returnReason?: string;
-  returnQuantity?: number;
+  returnInfo?: {
+    status: "none" | "requested" | "approved" | "rejected" | "completed";
+    reason?: string;
+    quantity?: number;
+    requestedAt?: Date;
+    processedAt?: Date;
+  };
 }
 
+// ============================================
+// COUPON USAGE INTERFACE
+// ============================================
 export interface ICouponUsage {
   code: string;
   type: "percentage" | "fixed" | "free_shipping";
@@ -33,6 +66,9 @@ export interface ICouponUsage {
   freeShipping: boolean;
 }
 
+// ============================================
+// SHIPPING ADDRESS INTERFACE
+// ============================================
 export interface IShippingAddress {
   fullName: string;
   phone: string;
@@ -42,6 +78,9 @@ export interface IShippingAddress {
   postalCode?: string;
 }
 
+// ============================================
+// ORDER INTERFACE
+// ============================================
 export interface IOrder extends Document {
   orderNumber: string; // Auto-generated unique order number
   user: mongoose.Types.ObjectId;
@@ -50,48 +89,67 @@ export interface IOrder extends Document {
   items: IOrderItem[];
 
   // Pricing
-  subtotal: number;
-  shippingCost: number; // Set based on wilaya
-  total: number;
+  pricing: {
+    subtotal: number;
+    shippingCost: number;
+    couponDiscount: number;
+    total: number;
+  };
 
   // Shipping Details
-  shippingAddress: IShippingAddress;
-  shippingMethod: "home_delivery" | "office_pickup"; // Home delivery or pickup from office
+  shipping: {
+    address: IShippingAddress;
+    method: "home_delivery" | "office_pickup";
+    trackingNumber?: string;
+    estimatedDeliveryDate?: Date;
+    deliveredAt?: Date;
+  };
 
   // Payment
-  paymentMethod: "cash_on_delivery";
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  payment: {
+    method: "cash_on_delivery";
+    status: "pending" | "paid" | "failed" | "refunded";
+  };
 
   // Order Status
-  orderStatus:
-    | "pending"
-    | "confirmed"
-    | "processing"
-    | "shipped"
-    | "delivered"
-    | "cancelled";
-
-  // Tracking
-  trackingNumber?: string;
-  estimatedDeliveryDate?: Date;
-  deliveredAt?: Date;
+  status: {
+    current: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
+    history: {
+      status: string;
+      timestamp: Date;
+      note?: string;
+      updatedBy?: mongoose.Types.ObjectId; // Admin who updated
+    }[];
+  };
 
   // Notes
-  customerNote?: string;
-  adminNote?: string;
+  notes: {
+    customer?: string;
+    admin?: string;
+    internal?: string; // Private notes not shown to customer
+  };
 
   // Return/Refund
-  hasReturn: boolean;
-  returnTotal: number; // Total amount for returned items
+  returns: {
+    hasReturn: boolean;
+    totalRefund: number;
+    items: mongoose.Types.ObjectId[]; // References to items with returns
+  };
 
   // Coupon
   coupon?: ICouponUsage;
-  couponDiscount: number; // Amount discounted by coupon
 
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
+  cancelledAt?: Date;
+
+  updateStatus: (newStatus: string, note?: string, adminId?: mongoose.Types.ObjectId) => void;
 }
+
+// ============================================
+// SCHEMAS
+// ============================================
 
 const orderItemSchema = new Schema<IOrderItem>({
   product: {
@@ -106,24 +164,26 @@ const orderItemSchema = new Schema<IOrderItem>({
   sku: {
     type: String,
     required: true,
+    index: true,
   },
   name: {
-    ar: String,
-    en: String,
-    fr: String,
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    fr: { type: String, required: true },
   },
-  variantDetails: {
-    size: String,
-    color: String,
-    material: String,
-    customOptions: {
-      type: Object,
-      default: {},
-    },
-  },
-  price: {
-    type: Number,
+  selectedAttributes: {
+    type: Map,
+    of: Schema.Types.Mixed,
     required: true,
+  },
+  pricing: {
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    compareAtPrice: Number,
+    cost: Number,
   },
   quantity: {
     type: Number,
@@ -131,15 +191,24 @@ const orderItemSchema = new Schema<IOrderItem>({
     min: 1,
   },
   image: String,
-  returnStatus: {
+  productType: {
     type: String,
-    enum: ["none", "requested", "approved", "rejected", "completed"],
-    default: "none",
+    enum: ['simple', 'configurable'],
+    required: true,
   },
-  returnReason: String,
-  returnQuantity: {
-    type: Number,
-    default: 0,
+  returnInfo: {
+    status: {
+      type: String,
+      enum: ["none", "requested", "approved", "rejected", "completed"],
+      default: "none",
+    },
+    reason: String,
+    quantity: {
+      type: Number,
+      min: 0,
+    },
+    requestedAt: Date,
+    processedAt: Date,
   },
 });
 
@@ -165,7 +234,7 @@ const shippingAddressSchema = new Schema<IShippingAddress>({
     required: true,
   },
   postalCode: String,
-});
+}, { _id: false });
 
 const orderSchema = new Schema<IOrder>(
   {
@@ -189,15 +258,106 @@ const orderSchema = new Schema<IOrder>(
         message: "Order must have at least one item",
       },
     },
-    subtotal: {
-      type: Number,
-      required: true,
-      min: 0,
+    pricing: {
+      subtotal: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      shippingCost: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      couponDiscount: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      total: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
     },
-    shippingCost: {
-      type: Number,
-      required: true,
-      min: 0,
+    shipping: {
+      address: {
+        type: shippingAddressSchema,
+        required: true,
+      },
+      method: {
+        type: String,
+        enum: ["home_delivery", "office_pickup"],
+        required: true,
+      },
+      trackingNumber: String,
+      estimatedDeliveryDate: Date,
+      deliveredAt: Date,
+    },
+    payment: {
+      method: {
+        type: String,
+        enum: ["cash_on_delivery"],
+        default: "cash_on_delivery",
+      },
+      status: {
+        type: String,
+        enum: ["pending", "paid", "failed", "refunded"],
+        default: "pending",
+        index: true,
+      },
+    },
+    status: {
+      current: {
+        type: String,
+        enum: [
+          "pending",
+          "confirmed",
+          "processing",
+          "shipped",
+          "delivered",
+          "cancelled",
+        ],
+        default: "pending",
+        index: true,
+      },
+      history: [
+        {
+          status: {
+            type: String,
+            required: true,
+          },
+          timestamp: {
+            type: Date,
+            default: Date.now,
+          },
+          note: String,
+          updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "Admin",
+          },
+        },
+      ],
+    },
+    notes: {
+      customer: String,
+      admin: String,
+      internal: String,
+    },
+    returns: {
+      hasReturn: {
+        type: Boolean,
+        default: false,
+        index: true,
+      },
+      totalRefund: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      items: [{
+        type: Schema.Types.ObjectId,
+      }],
     },
     coupon: {
       code: String,
@@ -208,65 +368,16 @@ const orderSchema = new Schema<IOrder>(
       discount: Number,
       freeShipping: Boolean,
     },
-    couponDiscount: {
-      type: Number,
-      default: 0,
-    },
-    total: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    shippingAddress: {
-      type: shippingAddressSchema,
-      required: true,
-    },
-    shippingMethod: {
-      type: String,
-      enum: ["home_delivery", "office_pickup"],
-      required: true,
-    },
-    paymentMethod: {
-      type: String,
-      enum: ["cash_on_delivery"],
-      default: "cash_on_delivery",
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "failed", "refunded"],
-      default: "pending",
-    },
-    orderStatus: {
-      type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "processing",
-        "shipped",
-        "delivered",
-        "cancelled",
-      ],
-      default: "pending",
-      index: true,
-    },
-    trackingNumber: String,
-    estimatedDeliveryDate: Date,
-    deliveredAt: Date,
-    customerNote: String,
-    adminNote: String,
-    hasReturn: {
-      type: Boolean,
-      default: false,
-    },
-    returnTotal: {
-      type: Number,
-      default: 0,
-    },
+    cancelledAt: Date,
   },
   {
     timestamps: true,
-  },
+  }
 );
+
+// ============================================
+// MIDDLEWARE
+// ============================================
 
 // Generate unique order number before saving
 orderSchema.pre("save", async function (next) {
@@ -291,11 +402,131 @@ orderSchema.pre("save", async function (next) {
     }
 
     this.orderNumber = `${year}${month}${day}${sequence.toString().padStart(4, "0")}`;
+    
+    // Initialize status history
+    this.status.history = [{
+      status: this.status.current,
+      timestamp: new Date(),
+    }];
+  }
+  
+  next();
+});
+
+// Add status to history when status changes
+orderSchema.pre("save", function (next) {
+  if (!this.isNew && this.isModified('status.current')) {
+    this.status.history.push({
+      status: this.status.current,
+      timestamp: new Date(),
+    });
   }
   next();
 });
 
-// Indexes
+// ============================================
+// INDEXES
+// ============================================
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ 'shipping.address.wilaya': 1 });
+orderSchema.index({ 'pricing.total': -1 });
+
+// ============================================
+// VIRTUALS
+// ============================================
+
+// Total items count
+orderSchema.virtual('totalItems').get(function () {
+  return this.items.reduce((sum, item) => sum + item.quantity, 0);
+});
+
+// Total profit (if cost is tracked)
+orderSchema.virtual('totalProfit').get(function () {
+  const itemsProfit = this.items.reduce((profit, item) => {
+    if (item.pricing.cost) {
+      const itemProfit = (item.pricing.price - item.pricing.cost) * item.quantity;
+      return profit + itemProfit;
+    }
+    return profit;
+  }, 0);
+  
+  return itemsProfit - this.pricing.shippingCost;
+});
+
+// Check if order can be cancelled
+orderSchema.virtual('canBeCancelled').get(function () {
+  return ['pending', 'confirmed'].includes(this.status.current);
+});
+
+// Check if order can have returns
+orderSchema.virtual('canHaveReturns').get(function () {
+  return this.status.current === 'delivered';
+});
+
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+// ============================================
+// METHODS
+// ============================================
+
+// Add status update
+orderSchema.methods.updateStatus = function(
+  newStatus: string,
+  note?: string,
+  adminId?: mongoose.Types.ObjectId
+) {
+  this.status.current = newStatus;
+  this.status.history.push({
+    status: newStatus,
+    timestamp: new Date(),
+    note,
+    updatedBy: adminId,
+  });
+  
+  if (newStatus === 'cancelled') {
+    this.cancelledAt = new Date();
+  }
+  
+  if (newStatus === 'delivered') {
+    this.shipping.deliveredAt = new Date();
+    this.payment.status = 'paid';
+  }
+};
+
+// Calculate refund for item return
+orderSchema.methods.processItemReturn = function(
+  itemId: mongoose.Types.ObjectId,
+  returnQuantity: number,
+  reason: string
+) {
+  const item = this.items.id(itemId);
+  if (!item) {
+    throw new Error('Item not found in order');
+  }
+  
+  if (returnQuantity > item.quantity) {
+    throw new Error('Return quantity exceeds ordered quantity');
+  }
+  
+  // Update item return info
+  item.returnInfo = {
+    status: 'requested',
+    quantity: returnQuantity,
+    reason,
+    requestedAt: new Date(),
+  };
+  
+  // Calculate refund amount
+  const refundAmount = item.pricing.price * returnQuantity;
+  this.returns.totalRefund += refundAmount;
+  this.returns.hasReturn = true;
+  
+  if (!this.returns.items.includes(itemId)) {
+    this.returns.items.push(itemId);
+  }
+  
+  return refundAmount;
+};
 
 export default mongoose.model<IOrder>("Order", orderSchema);

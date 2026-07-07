@@ -4,7 +4,7 @@ import { Document } from 'mongoose';
 // Extend Express Request to include user
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
+    id: any;
     email: string;
     role: 'admin' | 'customer' | 'super_admin' | 'manager' | 'staff' | 'viewer';
     permissions?: string[];

@@ -1,4 +1,3 @@
-// backend/src/routes/inventoryRoutes.ts
 import express from 'express';
 import {
   getInventoryOverview,
@@ -7,6 +6,7 @@ import {
   getAllStockHistory,
   getLowStockAlerts,
   bulkStockAdjust,
+  getInventoryValueReport,
 } from '../controllers/inventoryController';
 import { protect, isAdmin } from '../middleware/authMiddleware';
 
@@ -23,6 +23,12 @@ router.use(protect, isAdmin);
  *     tags: [Admin - Inventory]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: lowStockThreshold
+ *         schema:
+ *           type: number
+ *           default: 10
  *     responses:
  *       200:
  *         description: Inventory overview retrieved successfully
@@ -70,7 +76,17 @@ router.get('/low-stock', getLowStockAlerts);
  *         name: type
  *         schema:
  *           type: string
- *           enum: [adjustment, purchase, return, damage, loss]
+ *           enum: [adjustment, sale, return, restock, correction]
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Stock history retrieved successfully
@@ -96,6 +112,14 @@ router.get('/history', getAllStockHistory);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Stock history for variant retrieved
@@ -116,24 +140,24 @@ router.get('/history/:productId/:variantId', getStockHistory);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [productId, variantId, quantity, type]
+ *             required: [productId, adjustment]
  *             properties:
  *               productId:
  *                 type: string
  *               variantId:
  *                 type: string
- *               quantity:
+ *                 description: Required for configurable products
+ *               adjustment:
  *                 type: number
+ *                 description: Positive to add, negative to subtract
  *               type:
  *                 type: string
- *                 enum: [adjustment, purchase, return, damage, loss]
- *               notes:
+ *                 enum: [adjustment, sale, return, restock, correction]
+ *               reason:
  *                 type: string
  *     responses:
  *       200:
  *         description: Stock adjusted successfully
- *       400:
- *         description: Invalid adjustment
  */
 router.post('/adjust', adjustStock);
 
@@ -157,20 +181,66 @@ router.post('/adjust', adjustStock);
  *                 type: array
  *                 items:
  *                   type: object
- *                   required: [productId, variantId, quantity, type]
+ *                   required: [productId, adjustment]
  *                   properties:
  *                     productId:
  *                       type: string
  *                     variantId:
  *                       type: string
- *                     quantity:
+ *                     adjustment:
  *                       type: number
  *                     type:
+ *                       type: string
+ *                     reason:
  *                       type: string
  *     responses:
  *       200:
  *         description: Stock adjustments applied successfully
  */
 router.post('/bulk-adjust', bulkStockAdjust);
+
+// ============================================
+// NEW ENDPOINT
+// ============================================
+
+/**
+ * @swagger
+ * /admin/inventory/value-report:
+ *   get:
+ *     summary: Get inventory value report (NEW)
+ *     tags: [Admin - Inventory]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Get total stock value, cost value, and potential profit breakdown by category and brand
+ *     responses:
+ *       200:
+ *         description: Inventory value report generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         totalStockValue:
+ *                           type: number
+ *                         totalCostValue:
+ *                           type: number
+ *                         totalPotentialProfit:
+ *                           type: number
+ *                         profitMargin:
+ *                           type: string
+ *                     byCategory:
+ *                       type: object
+ *                     byBrand:
+ *                       type: object
+ */
+router.get('/value-report', getInventoryValueReport);
 
 export default router;

@@ -10,6 +10,9 @@ import {
   updateVariant,
   deleteVariant,
   checkVariantStock,
+  getVariantByAttributes,
+  getAvailableOptions,
+  updateProductOptions,
 } from '../controllers/productController';
 import { protect, isAdmin } from '../middleware/authMiddleware';
 
@@ -39,13 +42,22 @@ const router = express.Router();
  *         schema:
  *           type: string
  *       - in: query
- *         name: priceMin
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [simple, configurable]
+ *       - in: query
+ *         name: minPrice
  *         schema:
  *           type: number
  *       - in: query
- *         name: priceMax
+ *         name: maxPrice
  *         schema:
  *           type: number
+ *       - in: query
+ *         name: inStock
+ *         schema:
+ *           type: boolean
  *     responses:
  *       200:
  *         description: Products retrieved successfully
@@ -67,10 +79,6 @@ router.get('/', getProducts);
  *     responses:
  *       200:
  *         description: Product retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
  *       404:
  *         description: Product not found
  */
@@ -91,10 +99,6 @@ router.get('/slug/:slug', getProductBySlug);
  *     responses:
  *       200:
  *         description: Product retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
  *       404:
  *         description: Product not found
  */
@@ -123,6 +127,77 @@ router.get('/:id', getProduct);
  */
 router.get('/:id/variants/:variantId/stock', checkVariantStock);
 
+// ============================================
+// NEW ENDPOINTS
+// ============================================
+
+/**
+ * @swagger
+ * /products/{id}/variants/find:
+ *   post:
+ *     summary: Find variant by attributes (NEW)
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [attributes]
+ *             properties:
+ *               attributes:
+ *                 type: object
+ *                 example:
+ *                   color: "black"
+ *                   size: "M"
+ *     responses:
+ *       200:
+ *         description: Variant found
+ *       404:
+ *         description: No variant found with specified attributes
+ */
+router.post('/:id/variants/find', getVariantByAttributes);
+
+/**
+ * @swagger
+ * /products/{id}/options/available:
+ *   get:
+ *     summary: Get available options for an option code (NEW)
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: optionCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The option code (e.g., "color", "size")
+ *       - in: query
+ *         name: selectedAttributes
+ *         schema:
+ *           type: string
+ *         description: JSON string of already selected attributes
+ *         example: '{"color":"black"}'
+ *     responses:
+ *       200:
+ *         description: Available options retrieved
+ */
+router.get('/:id/options/available', getAvailableOptions);
+
+// ============================================
+// ADMIN ONLY ROUTES
+// ============================================
+
 /**
  * @swagger
  * /products:
@@ -137,29 +212,33 @@ router.get('/:id/variants/:variantId/stock', checkVariantStock);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, price, category, brand]
+ *             required: [type, name, slug, description, category, basePricing, status]
  *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [simple, configurable]
  *               name:
+ *                 type: object
+ *               slug:
  *                 type: string
  *               description:
- *                 type: string
- *               price:
- *                 type: number
+ *                 type: object
  *               category:
  *                 type: string
- *               brand:
- *                 type: string
- *               image:
- *                 type: string
- *               stock:
- *                 type: number
+ *               basePricing:
+ *                 type: object
+ *                 properties:
+ *                   price:
+ *                     type: number
+ *               options:
+ *                 type: array
+ *                 description: Required for configurable products
+ *               variants:
+ *                 type: array
+ *                 description: Required for configurable products
  *     responses:
  *       201:
  *         description: Product created successfully
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Admin only
  */
 router.post('/', protect, isAdmin, createProduct);
 
@@ -177,26 +256,9 @@ router.post('/', protect, isAdmin, createProduct);
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               stock:
- *                 type: number
  *     responses:
  *       200:
  *         description: Product updated successfully
- *       404:
- *         description: Product not found
  */
 router.put('/:id', protect, isAdmin, updateProduct);
 
@@ -217,10 +279,38 @@ router.put('/:id', protect, isAdmin, updateProduct);
  *     responses:
  *       200:
  *         description: Product deleted successfully
- *       404:
- *         description: Product not found
  */
 router.delete('/:id', protect, isAdmin, deleteProduct);
+
+/**
+ * @swagger
+ * /products/{id}/options:
+ *   put:
+ *     summary: Update product options (Admin only) (NEW)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [options]
+ *             properties:
+ *               options:
+ *                 type: array
+ *     responses:
+ *       200:
+ *         description: Product options updated successfully
+ */
+router.put('/:id/options', protect, isAdmin, updateProductOptions);
 
 /**
  * @swagger
@@ -242,16 +332,22 @@ router.delete('/:id', protect, isAdmin, deleteProduct);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [color, size, sku]
+ *             required: [sku, attributes, pricing, inventory]
  *             properties:
- *               color:
- *                 type: string
- *               size:
- *                 type: string
  *               sku:
  *                 type: string
- *               stock:
- *                 type: number
+ *               attributes:
+ *                 type: object
+ *               pricing:
+ *                 type: object
+ *                 properties:
+ *                   price:
+ *                     type: number
+ *               inventory:
+ *                 type: object
+ *                 properties:
+ *                   stock:
+ *                     type: number
  *     responses:
  *       201:
  *         description: Variant added successfully
@@ -277,19 +373,6 @@ router.post('/:id/variants', protect, isAdmin, addVariant);
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               color:
- *                 type: string
- *               size:
- *                 type: string
- *               stock:
- *                 type: number
  *     responses:
  *       200:
  *         description: Variant updated successfully
